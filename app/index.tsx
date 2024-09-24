@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from "@/constants/Colors";
 import axios from "axios";
 import * as Updates from 'expo-updates'; // Importa expo-updates para reiniciar la app
+import { getGameSkins } from "./API/valorant-api";
 
 export async function accountLogout() {
     Alert.alert(
@@ -35,7 +36,7 @@ export default function Index() {
     const [isLogged, setLogged] = useState<boolean | null>(null);
     const riotAuth = "https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid";
     const [currentUrl, setCurrentUrl] = useState<string | null>(null); // Estado para la URL
-    
+    const [skins, setSkins] = useState<any | null>(null); // Estado para la URL
 
     const extractTokensFromUrl = (url: string) => {
         AsyncStorage.clear();
@@ -45,22 +46,22 @@ export default function Index() {
         const expiresInMatch = url.match(/expires_in=([^&]*)/);
         
         if (accessTokenMatch && idTokenMatch && expiresInMatch) {
-        const accessToken = accessTokenMatch[1];
-        const idToken = idTokenMatch[1];
-        const expiresIn = expiresInMatch[1];
-        // Decodificar los tokens usando jwtDecode
-        const accessTokenDecoded = jwtDecode(accessToken);
-        const idTokenDecoded = jwtDecode(idToken);
+            const accessToken = accessTokenMatch[1];
+            const idToken = idTokenMatch[1];
+            const expiresIn = expiresInMatch[1];
+            // Decodificar los tokens usando jwtDecode
+            const accessTokenDecoded = jwtDecode(accessToken);
+            const idTokenDecoded = jwtDecode(idToken);
 
-        const playerUUIDstring = JSON.stringify(accessTokenDecoded.sub).replace(/"/g, '');
-        const playerUUID = playerUUIDstring;
+            const playerUUIDstring = JSON.stringify(accessTokenDecoded.sub).replace(/"/g, '');
+            const playerUUID = playerUUIDstring;
 
-        AsyncStorage.setItem('accessToken', accessToken);
-        AsyncStorage.setItem('idToken', idToken);
-        AsyncStorage.setItem('expiresIn', expiresIn);
-        AsyncStorage.setItem('playerUUID', playerUUID);
-
-        getEntitlementToken(accessToken);
+            AsyncStorage.setItem('accessToken', accessToken);
+            AsyncStorage.setItem('idToken', idToken);
+            AsyncStorage.setItem('expiresIn', expiresIn);
+            AsyncStorage.setItem('playerUUID', playerUUID);
+            
+            getEntitlementToken(accessToken);
         }
     };
 
@@ -78,7 +79,10 @@ export default function Index() {
           );
 
           AsyncStorage.setItem('entitlementToken', response.data.entitlements_token);
+          const skins = await getGameSkins();
+          setSkins(skins);
 
+          checkTokens();
         } catch (error) {
           console.error("Error fetching entitlement token:", error);
         }
@@ -90,8 +94,10 @@ export default function Index() {
         const expiresIn = await AsyncStorage.getItem('expiresIn');
         const playerUUID = await AsyncStorage.getItem('playerUUID');
         const entitlementToken = await AsyncStorage.getItem('entitlementToken');
+        
+        
 
-        if (accessToken && idToken && expiresIn && playerUUID && entitlementToken) {
+        if (accessToken && idToken && expiresIn && playerUUID && entitlementToken && skins) {
             setLogged(true);
             console.log('Estás logeado, tienes los tokens');
         } else {
@@ -99,14 +105,6 @@ export default function Index() {
             console.log('No estás logeado, no tienes los tokens');
         }
     };
-
-    useEffect(() => {
-        // Verifica los tokens cada 2 segundos
-        const intervalId = setInterval(checkTokens, 500);
-
-        // Limpia el intervalo al desmontar el componente
-        return () => clearInterval(intervalId);
-    }, []);
 
 
   return (
