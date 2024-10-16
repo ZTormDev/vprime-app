@@ -2,16 +2,14 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
-import 'react-native-reanimated';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Colors } from '@/constants/Colors';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     Rubik300: require("../assets/fonts/Rubik-Light.ttf"),
     Rubik400: require("../assets/fonts/Rubik-Regular.ttf"),
@@ -56,7 +54,9 @@ export default function RootLayout() {
       statusBarStyle: 'auto', 
       statusBarColor: 'black', 
       navigationBarColor: 'black', 
-      navigationBarHidden: false }}>
+      navigationBarHidden: false,
+      contentStyle: {backgroundColor: Colors.dark.background},
+      }}>
         
       {isLogged ? (
         <Stack.Screen 
@@ -68,7 +68,7 @@ export default function RootLayout() {
             statusBarStyle: 'auto', 
             statusBarColor: 'black', 
             navigationBarColor: 'black', 
-            navigationBarHidden: false 
+            navigationBarHidden: false,
           }} 
         />
       ) : (

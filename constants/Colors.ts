@@ -16,8 +16,10 @@ export const Colors = {
     tabIconSelected: tintColorLight,
   },
   dark: {
-    text: '#ECEDEE',
+    text: '#e3e3e3',
     background: '#212121',
+    card: 'rgba(255,255,255,0.075)',
+    cardPress: 'rgba(255,255,255,0.25)',
     tabBar: '#121212',
     tint: tintColorDark,
     icon: '#9BA1A6',
@@ -26,5 +28,11 @@ export const Colors = {
   },
   red: {
     color: '#fe5858',
+    highlighted: '#ffc1c1',
   },
+  text: {
+    highlighted: '#39ffca',
+    active: '#3af1a2',
+    dark: '#145e4b'
+  }
 };

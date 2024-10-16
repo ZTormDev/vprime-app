@@ -2,20 +2,35 @@ import { useState, useEffect } from "react";
 import { View, ScrollView, Text, Image, TouchableHighlight } from 'react-native';
 import React from "react";
 import axios from "axios";
-import { getSkin, parseShop, storeSkins } from "../API/valorant-api";
+import { extraHeaders, featuredBundle, getSkin, isInWishList, parseShop, storeSkins, nightMarket } from "../API/valorant-api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Colors } from "@/constants/Colors";
-import { Video, ResizeMode } from 'expo-av';
+import CurrencyIcon from "@/components/CurrencyIcon";
+import { LinearGradient } from 'expo-linear-gradient';
+import { useIsFocused } from "@react-navigation/native";
+import { SkinPreview } from "@/components/SkinPreview";
 
 export default function Store() {
   const [tokens, setTokens] = useState({ accessToken: "", idToken: "", expiresIn: "" });
-  const [storeData, setStoreData] = useState<any[]>([]);
-  const [timeRemaining, setTimeRemaining] = useState(""); 
+  const [storeData, setStoreData] = useState<any>([]);
+  const [featuredBundleData, setFeaturedBundleData] = useState<any>([]);
+  const [OffersTimeRemaining, setOffersTimeRemaining] = useState(""); 
+  const [featuredBundleTimeRemaining, setFeaturedBundleTimeRemaining] = useState("");
   const [playerUUID, setPlayerUUID] = useState("");
   const [entitlementToken, setEntitlementToken] = useState("");
-  const [isSkinPanelShown, setSkinPanelShown] = useState<boolean | null>(null);
-  const [skinPreview, setSkinPreview] = useState<any>(null); // or use a more specific type
+  const [selectedSkin, setSelectedSkin] = useState<any | null>(null); // Estado para la skin seleccionada
   const [videoPreview, setVideoPreview] = useState<any>(null);
+  const [inWishlist, setInWishlist] = useState<boolean>(false);
+  const [debugStoreData, setDebugStoreData] = useState<any>([]);
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (!isFocused) {
+      setSelectedSkin(null);  // Resetea isSkinPanelShown cuando la pantalla pierde el foco
+    }
+  }, [isFocused]);
+
+  
 
   useEffect(() => {
     const fetchTokens = async () => {
@@ -29,86 +44,131 @@ export default function Store() {
         setEntitlementToken(entitlementToken);
         setPlayerUUID(playerUUID);
         setTokens({ accessToken, idToken, expiresIn });
+
       } catch (error) {
         console.error('Error al obtener los tokens de AsyncStorage:', error);
       }
     };
-  
     fetchTokens();
   }, []);
 
+
+
   const fetchStoreData = async (entitlementToken: string, accessToken: string, playerUUID: string) => {
     const shard = "na";
-    const clientPlatform = "ew0KCSJwbGF0Zm9ybVR5cGUiOiAiUEMiLA0KCSJwbGF0Zm9ybU9TIjogIldpbmRvd3MiLA0KCSJwbGF0Zm9ybU9TVmVyc2lvbiI6ICIxMC4wLjE5MDQyLjEuMjU2LjY0Yml0IiwNCgkicGxhdGZvcm1DaGlwc2V0IjogIlVua25vd24iDQp9";
-
     try {
-      const versionResponse = await axios.get('https://valorant-api.com/v1/version');
-      const riotClientVersion = versionResponse.data.data.riotClientVersion;
-
-      const response = await axios.get(
-        `https://pd.${shard}.a.pvp.net/store/v2/storefront/${playerUUID}`,
-        {
+      const response = await axios.request({
+          url: `https://pd.${shard}.a.pvp.net/store/v3/storefront/${playerUUID}`,
+          method: "POST",
           headers: {
-            "X-Riot-ClientPlatform": clientPlatform,
-            "X-Riot-ClientVersion": riotClientVersion,
-            "X-Riot-Entitlements-JWT": entitlementToken,
+            ...extraHeaders,
+            "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`,
+            "X-Riot-Entitlements-JWT": entitlementToken, 
           },
-        }
-      );
+          data: {},
+        });
+        
       await parseShop(response.data)
       .then(() => {
         setStoreData(storeSkins);
+        setFeaturedBundleData(featuredBundle);
       });
 
-    } catch (error) {
-      console.error("Error fetching store data:", error);
-    }
+      setDebugStoreData(nightMarket);
+
+      } catch (error) {
+        console.log('error fetching store data: '+ error);
+      }
+  
   };
 
-  const getStoreTimeRemaining = () => {
-    const now = new Date();
-    const nowUTC = new Date(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate(),
-      now.getUTCHours(),
-      now.getUTCMinutes(),
-      now.getUTCSeconds()
-    );
-  
-    const targetTimeUTC = new Date(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate(),
-      24,
-      0,
-      0
-    );
-  
-    if (nowUTC > targetTimeUTC) {
-      targetTimeUTC.setUTCDate(nowUTC.getUTCDate() + 1);
+  const calculateFeaturedBundleTimeRemaining = async (initialSeconds: number) => {
+    if (initialSeconds <= 0){
+      try {
+        await fetchStoreData(entitlementToken, tokens.accessToken, playerUUID)
+        .then(() => {
+          return "00:00:00:00";
+        });
+      } catch (error) {
+        console.log('error fetching store data in calculating time remaining: '+ error);
+      }
     }
-  
-    const timeDifference = targetTimeUTC.getTime() - nowUTC.getTime();
-    const hoursRemaining = Math.floor(timeDifference / (1000 * 60 * 60));
-    const minutesRemaining = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
-    const secondsRemaining = Math.floor((timeDifference % (1000 * 60)) / 1000);
-  
-    const formattedHours = String(hoursRemaining).padStart(2, "0");
-    const formattedMinutes = String(minutesRemaining).padStart(2, "0");
-    const formattedSeconds = String(secondsRemaining).padStart(2, "0");
-  
+
+    const days = Math.floor(initialSeconds / (3600 * 24));
+    const hours = Math.floor((initialSeconds % (3600 * 24)) / 3600);
+    const minutes = Math.floor((initialSeconds % 3600) / 60);
+    const seconds = initialSeconds % 60;
+
+    const formattedDays = String(days).padStart(2, '0');
+    const formattedHours = String(hours).padStart(2, '0');
+    const formattedMinutes = String(minutes).padStart(2, '0');
+    const formattedSeconds = String(seconds).padStart(2, '0');
+
+    return `${formattedDays}:${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+  };
+
+  const calculateOffersTimeRemaining = async (initialSeconds: number) => {
+    if (initialSeconds <= 0){
+      try {
+        await fetchStoreData(entitlementToken, tokens.accessToken, playerUUID)
+        .then(() => {
+          return "00:00:00";
+        });
+      } catch (error) {
+        console.log('error fetching store data in calculating time remaining: '+ error);
+      }
+    }
+
+    const hours = Math.floor((initialSeconds % (3600 * 24)) / 3600);
+    const minutes = Math.floor((initialSeconds % 3600) / 60);
+    const seconds = initialSeconds % 60;
+
+    const formattedHours = String(hours).padStart(2, '0');
+    const formattedMinutes = String(minutes).padStart(2, '0');
+    const formattedSeconds = String(seconds).padStart(2, '0');
+
     return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
   };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTimeRemaining(getStoreTimeRemaining());
-    }, 1000);
 
-    return () => clearInterval(interval);
-  }, []);
+  // CONSIGUE LOS TIEMPOS RESTANTES DE OFFERS Y FEATURED BUNDLE
+  useEffect(() => {
+    if (featuredBundleData.timeRemaining && storeData.OffersTimeRemaining){
+      const initialSecondsBundle = featuredBundleData.timeRemaining;
+      let remainingSecondsBundle = initialSecondsBundle;
+
+      // const initialSecondsOffers = storeData.OffersTimeRemaining;
+      const initialSecondsOffers = storeData.OffersTimeRemaining;
+      let remainingSecondsOffers = initialSecondsOffers;
+
+      const intervalBundle = setInterval(async () => {
+        remainingSecondsBundle -= 1;
+        await calculateFeaturedBundleTimeRemaining(remainingSecondsBundle).then((seconds) => {
+          setFeaturedBundleTimeRemaining(seconds);
+        });
+
+        if (remainingSecondsBundle <= 0) {
+          clearInterval(intervalBundle);
+        }
+      }, 1000);
+
+      const intervalOffers = setInterval(async () => {
+        remainingSecondsOffers -= 1;
+        await calculateOffersTimeRemaining(remainingSecondsOffers).then((seconds) => {
+          setOffersTimeRemaining(seconds);
+        });
+        if (remainingSecondsOffers <= 0) {
+          clearInterval(intervalOffers);
+        }
+      }, 1000);
+
+      return () => {clearInterval(intervalBundle); clearInterval(intervalOffers);};
+    }
+  }, [featuredBundleData, storeData]);
+
+
+
 
   useEffect(() => {
     const getAllData = async () => {
@@ -128,80 +188,142 @@ export default function Store() {
     
     if(show){
       const skin = await getSkin(skinUUID);
-      setSkinPreview(skin);
+      setSelectedSkin(skin);
 
       const lastLevel: any = Object.keys(skin.levels).sort().reverse()[0];
 
       setVideoPreview(skin.levels[lastLevel].streamedVideo);
-
-      setSkinPanelShown(show);
     }
     else {
-      setSkinPanelShown(show);
+      setSelectedSkin(null);
     }
   }
+
+  const handleWishlistPress = async (skin: any) => {
+    let inWishlist = await isInWishList(skin);
+    setInWishlist(inWishlist);
+  };
+
+
+
+
+
+  
 
   return (
     <View style={{ flexGrow: 1, width: '100%', backgroundColor: '#252525'}}>
       <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: "center", alignItems: "center", zIndex: 1}}>
+
+
+      {/* <Text style={{color:'white'}}>
+        {JSON.stringify(debugStoreData, null, 1)}
+      </Text> */}
+
+
         {tokens.accessToken && storeData && (
-          <ScrollView style={{ width: '100%', marginBottom: 40,}}>
-            <Text style={{ fontFamily: 'Rubik500', color: 'white', textAlign: 'center', fontSize: 45, margin: 25}}>Your Store</Text>
-            <View style={{ alignItems: 'center', gap: 35,}}>
-              <View style={{ alignItems: 'center', justifyContent: 'center'}}>
-                <Text style={{ fontFamily: 'Rubik400', color: '#e1e1e1', textAlign: 'center', fontSize: 22}}>Next Store In:</Text>
-                <Text style={{ fontFamily: 'Rubik700', color: '#fc4e4e', textAlign: 'center', fontSize: 25, marginTop: -10}}>{timeRemaining}</Text>
+          <ScrollView style={{ width: '100%', marginBottom: 25, marginTop: 25}}>
+
+            {nightMarket && (
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ textAlign: 'center', marginHorizontal: 8, marginVertical: 5, fontFamily: 'Rubik700' , color: Colors.red.color, fontSize: 32}}>NIGHT MARKET IS ARRIVED!</Text>
+                <Text style={{ textAlign: 'center', fontFamily: 'Rubik700' , marginVertical: 5, color: Colors.text.active, fontSize: 20}}>ENDS IN: {nightMarket.TimeRemaining}</Text>
+
+                <View style={{ alignItems: 'center', gap: 25, marginTop: 20, marginBottom: 35}}>
+                  {nightMarket.Offers.map((skin: any) => 
+                    <TouchableHighlight key={skin.uuid} activeOpacity={0.25} underlayColor={Colors.dark.cardPress} onPress={() => showSkinPanel(true, skin.levels[0].uuid)} style={{borderWidth: 1, borderColor: Colors.dark.cardPress, width: '90%', borderRadius: 2}}>
+                      <>
+                        <LinearGradient
+                            colors={['rgba(0,0,0,0.1)', skin.VariantColor]}
+                            style={{position: 'absolute', width: '100%', height: '100%'}}
+                          />
+                        <View style={{alignItems: 'flex-start', justifyContent: 'space-between', display: 'flex', flexDirection: 'column', padding: 8}}>
+                          
+                          <View style={{paddingHorizontal: 5 ,width: '100%', flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 5}}>
+                              <CurrencyIcon icon="vp" size={22}/>
+                              <Text style={{ fontFamily: 'Rubik400' , color: Colors.dark.text, fontSize: 20}}>{skin.Cost}</Text>
+                          </View>
+
+                          <View style={{ width: '100%', marginVertical: '-6%', alignItems: 'center'}}>
+                            <Image source={{uri: skin.levels[0].displayIcon || skin.displayIcon}} style={{ width: '80%', resizeMode: 'contain', aspectRatio: 16/9, }} />
+                          </View>
+
+                          <Text style={{fontFamily: 'Rubik500' , color: 'white', fontSize: 20, fontWeight: 500, textAlign: 'left', textTransform: 'uppercase'}}>{skin.displayName}</Text>
+
+                        </View>
+                      </>
+                    </TouchableHighlight> 
+                  )}
+                </View>
+
+                <View style={{ marginBottom: 35, borderBottomWidth: 1, borderBottomColor: Colors.dark.cardPress, width: '90%'}}></View>
               </View>
-              {storeSkins.map((skin) => 
-                <TouchableHighlight key={skin.uuid} activeOpacity={0.25} underlayColor={Colors.red.color} onPress={() => showSkinPanel(true, skin.levels[0].uuid)} style={{ backgroundColor: 'rgba(255,255,255,0.075)', width: '90%', alignItems: 'center', justifyContent: 'flex-start', borderRadius: 15, padding: 15,}}>
-                  <View style={{alignItems: 'center', justifyContent: 'flex-start'}}>
-                    <View style={{ width: '100%', display: "flex", flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20,}}>
-                      <Text style={{ fontFamily: 'Rubik400' , color: 'white', fontSize: 22,  flex: 1, fontWeight: 500}}>{skin.displayName}</Text>
-                      <Text style={{ fontFamily: 'Rubik700' , color: 'white', fontSize: 20, fontWeight: 500, backgroundColor: '#fc4e4e', paddingHorizontal: 10, borderRadius: 5}}>{skin.Cost} VP</Text>
-                    </View>
-                    <View>
-                      <Image source={{uri: skin.chromas[0].displayIcon}} style={{ width: '80%', resizeMode: 'contain', aspectRatio: 16/9, }} />
+            )}
+
+            <View style={{alignItems: 'center'}}>
+              {featuredBundleData && featuredBundleData.displayIcon && (
+                <TouchableHighlight activeOpacity={0.25} underlayColor={Colors.dark.cardPress} onPress={() => {}} style={{marginBottom: 20,borderWidth: 1, borderColor: Colors.dark.cardPress, width: '90%', borderRadius: 2}}>
+                  <View>
+                    <Image source={{uri: featuredBundleData.displayIcon}} style={{position:'absolute', width: '100%', resizeMode: 'contain', aspectRatio: 16/9, }} />
+                    <View style={{ width: '100%', flexDirection: 'column', justifyContent: 'space-between', aspectRatio: 16/9, padding: 12}}>
+                      <View style={{flexDirection: 'column'}}>
+                        <View style={{flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center'}}>
+                          <Text style={{fontFamily: 'Rubik400' , color: 'white', fontSize: 16, textAlign: 'left', textTransform: 'uppercase'}}>FEATURED</Text>
+                          <Text style={{fontFamily: 'Rubik300' , color: 'white', fontSize: 13,textAlign: 'left', textTransform: 'uppercase'}}>  |  </Text>
+                          <Text style={{textShadowRadius: 3,textShadowOffset: {width: 0, height: 1},textShadowColor: 'black' ,fontFamily: 'Rubik500' , color: Colors.text.highlighted, fontSize: 17,textAlign: 'left', textTransform: 'uppercase'}}>{featuredBundleData.timeRemaining && (featuredBundleTimeRemaining)}</Text>
+                        </View>
+                        <Text style={{fontFamily: 'Rubik800' , color: 'white', fontSize: 30,textAlign: 'left', textTransform: 'uppercase', marginVertical: -10}}>{featuredBundleData.displayName}</Text>
+                        <Text style={{fontFamily: 'Rubik400' , color: 'white', fontSize: 16, textAlign: 'left', textTransform: 'uppercase'}}>COLLECTION</Text>
+                      </View>
+                      <View style={{flexDirection: 'column', alignItems: 'flex-end', width: '100%', marginRight: 30}}>
+                        <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
+                          <CurrencyIcon size={28} icon="vp"></CurrencyIcon>
+                          <Text style={{fontFamily: 'Rubik500' , color: 'white', fontSize: 23,textAlign: 'left', textTransform: 'uppercase'}}>{featuredBundleData.bundlePrice}</Text>
+                        </View>
+                      </View>
                     </View>
                   </View>
+                </TouchableHighlight> 
+              )}
+              <View style={{overflow: "hidden", display: 'flex',flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '90%', marginBottom: 15}}>
+                  <View style={{borderColor: Colors.dark.cardPress,borderBottomWidth: 1.5, width: '100%'}}/>
+                  <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginHorizontal: 10, gap: 8}}>
+                    <Text style={{ fontFamily: 'Rubik400', color: Colors.dark.text, fontSize: 18}}>OFFERS</Text>
+                    <Text style={{ fontFamily: 'Rubik500', color: 'white',fontSize: 15}}> | </Text>
+                    <Text style={{ fontFamily: 'Rubik500', color: Colors.text.highlighted , fontSize: 18}}>{OffersTimeRemaining}</Text>
+                  </View>
+                  <View style={{borderColor: Colors.dark.cardPress,borderBottomWidth: 1.5, width: '100%'}}/>
+                </View>
+            </View>
+            <View style={{ alignItems: 'center', gap: 25,}}>
+              {storeSkins.map((skin: any) => 
+                <TouchableHighlight key={skin.uuid} activeOpacity={0.25} underlayColor={Colors.dark.cardPress} onPress={() => showSkinPanel(true, skin.levels[0].uuid)} style={{borderWidth: 1, borderColor: Colors.dark.cardPress, width: '90%', borderRadius: 2}}>
+                  <>
+                    <LinearGradient
+                        colors={['rgba(0,0,0,0.1)', skin.VariantColor]}
+                        style={{position: 'absolute', width: '100%', height: '100%'}}
+                      />
+                    <View style={{alignItems: 'flex-start', justifyContent: 'space-between', display: 'flex', flexDirection: 'column', padding: 8}}>
+                      
+                      <View style={{paddingHorizontal: 5 ,width: '100%', flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 5}}>
+                          <CurrencyIcon icon="vp" size={22}/>
+                          <Text style={{ fontFamily: 'Rubik400' , color: Colors.dark.text, fontSize: 20}}>{skin.Cost}</Text>
+                      </View>
+
+                      <View style={{ width: '100%', marginVertical: '-6%', alignItems: 'center'}}>
+                        <Image source={{uri: skin.levels[0].displayIcon || skin.displayIcon}} style={{ width: '80%', resizeMode: 'contain', aspectRatio: 16/9, }} />
+                      </View>
+
+                      <Text style={{fontFamily: 'Rubik500' , color: 'white', fontSize: 20, fontWeight: 500, textAlign: 'left', textTransform: 'uppercase'}}>{skin.displayName}</Text>
+
+                    </View>
+                  </>
                 </TouchableHighlight> 
               )}
             </View>
           </ScrollView>
         )}
       </ScrollView>
-      {isSkinPanelShown && 
-        <View style={{ 
-          backgroundColor: 'rgba(0,0,0,0.75)', 
-          position: 'absolute', 
-          top: 0, 
-          left: 0, 
-          right: 0, 
-          bottom: 0, 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          zIndex: 10
-        }}>
-          <View style={{ backgroundColor: Colors.dark.background, zIndex: 11, width: '95%', justifyContent: 'center', alignItems: 'center', padding: 25, borderRadius: 20, gap: 10}}>
-            <Text style={{ fontFamily: 'Rubik500', color: 'white', fontSize: 28, textAlign: 'center' }}>{skinPreview.displayName}</Text>
-            <Video
-              ref={null}
-              style={{ width: '100%', aspectRatio: 16/12, borderRadius: 5 }}
-              source={{
-                uri: videoPreview,
-              }}
-              useNativeControls={false}
-              resizeMode={ResizeMode.COVER}
-              isLooping
-              shouldPlay
-              isMuted={false}
-              volume={1}
-            />
-            <TouchableHighlight onPress={() => showSkinPanel(false, null)} activeOpacity={0.5} underlayColor='#ff8888' style={{marginTop: 30, backgroundColor: '#ff5454', borderRadius: 50, padding: 6, width: '100%' }}>
-              <Text style={{ fontFamily: 'Rubik500', color: 'white', fontSize: 23, textAlign: 'center' }}>Close</Text>
-            </TouchableHighlight>
-          </View>
-        </View>
-      }
+      {selectedSkin && (SkinPreview({selectedSkin, videoPreview, inWishlist, handleWishlistPress, setSelectedSkin}, selectedSkin.Cost))}
     </View>
   );
 }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "62892174076",
+    "project_id": "expopushnotifications-8e51f",
+    "storage_bucket": "expopushnotifications-8e51f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:62892174076:android:8a25bb5ffecde822770579",
+        "android_client_info": {
+          "package_name": "com.zetadev.vav"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUEBdxdUTUkBWO0RbGE0T2Ua8V4PST8fM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
