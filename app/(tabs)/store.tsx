@@ -215,9 +215,9 @@ export default function Store() {
       <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: "center", alignItems: "center", zIndex: 1}}>
 
 
-      {/* <Text style={{color:'white'}}>
-        {JSON.stringify(debugStoreData, null, 1)}
-      </Text> */}
+      <Text style={{color:'white'}}>
+        {JSON.stringify(debugStoreData.Offers[0], null, 1)}
+      </Text>
 
 
         {tokens.accessToken && storeData && (
