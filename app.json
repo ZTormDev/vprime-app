@@ -2,13 +2,13 @@
   "expo": {
     "name": "Valorant Account Viewer",
     "slug": "vav-app-android",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/valorantlogo.png",
+    "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/valorantlogo.png",
+      "image": "./assets/images/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#131313"
     },
@@ -17,7 +17,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/valorantlogo.png",
+        "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#131313"
       },
       "package": "com.zetadev.vav",
@@ -35,7 +35,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/valorantlogo.png",
+          "icon": "./assets/images/icon.png",
           "color": "#ff8484"
         }
       ]

@@ -168,9 +168,7 @@ function parseNightMarket(shop: any) {
     };
 
     if (shop.BonusStore != null && shop.BonusStore != undefined) {
-
-        console.log("SE ENCONTRO TIENDA NOCTURNA");
-
+        
         let nightMarketOffers: any[] = shop.BonusStore.BonusStoreOffers;
 
         for (let i = 0; i < nightMarketOffers.length; i++) {
@@ -178,7 +176,6 @@ function parseNightMarket(shop: any) {
             let skin: any = skins.find((skin: any) => skin.levels[0].uuid === nightMarketOffers[i].Offer.OfferID);
 
             if (skin) {
-                console.log("SE ENCONTRO UNA SKIN EN LA TIENDA NOCTURNA");
                 let costValues = Object.values(nightMarketOffers[i].DiscountCosts);
                 let originalCostValues = Object.values(nightMarketOffers[i].Offer.Cost);
 
