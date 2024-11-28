@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Valorant Account Viewer",
-    "slug": "vav-app-android",
+    "name": "VPrime",
+    "slug": "vprime",
     "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -14,14 +14,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.zetadev.vav"
+      "bundleIdentifier": "com.zetadev.vprime"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#131313"
       },
-      "package": "com.zetadev.vav",
+      "package": "com.zetadev.vprime",
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "INTERNET"
@@ -48,7 +48,10 @@
     },
     "extra": {
       "eas": {
-        "projectId": "0a0d71f3-e7e0-4088-87bd-e29643560b48"
+        "projectId": "316a7665-85a6-44f7-8932-6345a334a1aa"
+      },
+      "router": {
+        "origin": false
       }
     }
   }

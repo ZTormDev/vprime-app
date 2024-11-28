@@ -198,7 +198,7 @@ export default function Index() {
               style={{
                 fontFamily: "Rubik700",
                 fontSize: 25,
-                color: Colors.red.color,
+                color: Colors.accent.color,
                 marginBottom: 15,
                 textAlign: "center",
                 textTransform: "uppercase",
@@ -247,7 +247,7 @@ export default function Index() {
                 style={{
                   fontFamily: "Rubik700",
                   fontSize: 25,
-                  color: Colors.red.color,
+                  color: Colors.accent.color,
                   marginBottom: 15,
                   textAlign: "center",
                   textTransform: "uppercase",

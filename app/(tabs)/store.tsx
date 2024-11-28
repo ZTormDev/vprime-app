@@ -272,6 +272,8 @@ export default function Store() {
       const skin = await getSkin(skinUUID);
       setSelectedSkin(skin);
 
+      console.log(JSON.stringify(skin, null, 1));
+
       const lastLevel: any = Object.keys(skin.levels).sort().reverse()[0];
 
       setVideoPreview(skin.levels[lastLevel].streamedVideo);
@@ -835,7 +837,7 @@ export default function Store() {
           <Text
             style={{
               fontFamily: "Rubik600",
-              color: Colors.red.color,
+              color: Colors.accent.color,
               fontSize: 26,
               textAlign: "center",
             }}
@@ -844,17 +846,16 @@ export default function Store() {
           </Text>
         )}
       </ScrollView>
-      {selectedSkin &&
-        SkinPreview(
-          {
-            selectedSkin,
-            videoPreview,
-            inWishlist,
-            handleWishlistPress,
-            setSelectedSkin,
-          },
-          selectedSkin.Cost
-        )}
+      {selectedSkin && (
+        <SkinPreview
+          selectedSkin={selectedSkin}
+          videoPreview={videoPreview}
+          inWishlist={inWishlist}
+          handleWishlistPress={handleWishlistPress}
+          setSelectedSkin={setSelectedSkin}
+          price={selectedSkin.Cost}
+        />
+      )}
     </View>
   );
 }
