@@ -1,5 +1,4 @@
 import { addSkinToWishList } from "@/app/API/valorant-api";
-import { Video, ResizeMode } from "expo-av";
 import React, { useState } from "react";
 import {
   TouchableHighlight,
@@ -7,10 +6,12 @@ import {
   Text,
   StyleSheet,
   Image,
+  Alert,
 } from "react-native";
 import { TabBarIcon } from "./navigation/TabBarIcon";
 import { Colors } from "@/constants/Colors";
 import CurrencyIcon from "./CurrencyIcon";
+import { useVideoPlayer, VideoView } from "expo-video";
 
 export const SkinPreview = ({
   selectedSkin,
@@ -22,6 +23,10 @@ export const SkinPreview = ({
 }) => {
   // Add a new state to manage the current video
   const [currentVideoPreview, setCurrentVideoPreview] = useState(videoPreview);
+
+  const showAlert = () => {
+    Alert.alert("Variant video not found.");
+  };
 
   return (
     <View
@@ -92,7 +97,7 @@ export const SkinPreview = ({
           }}
         >
           {currentVideoPreview ? (
-            <Video
+            <VideoView
               style={{
                 width: "100%",
                 aspectRatio: 4 / 3,
@@ -101,15 +106,15 @@ export const SkinPreview = ({
                 borderWidth: 1,
                 borderColor: Colors.dark.cardPress,
               }}
-              source={{
-                uri: currentVideoPreview,
-              }}
-              useNativeControls={false}
-              resizeMode={ResizeMode.COVER}
-              isLooping
-              shouldPlay
-              isMuted={false}
-              volume={1}
+              player={useVideoPlayer(currentVideoPreview, (player) => {
+                player.loop = true;
+                player.play();
+                player.volume = 1;
+              })}
+              contentFit="cover"
+              nativeControls={false}
+              allowsFullscreen={false}
+              allowsPictureInPicture={false}
             />
           ) : (
             <Text
@@ -154,6 +159,10 @@ export const SkinPreview = ({
                       setCurrentVideoPreview(
                         chroma.streamedVideo || videoPreview
                       );
+
+                      if (chroma.streamedVideo == null && index != 0) {
+                        showAlert();
+                      }
                     }}
                     activeOpacity={0.25}
                     underlayColor={Colors.accent.darkColor}

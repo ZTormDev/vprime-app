@@ -16,6 +16,8 @@ import {
   parseShop,
   storeSkins,
   nightMarket,
+  contentTiers,
+  skins,
 } from "../API/valorant-api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Colors } from "@/constants/Colors";
@@ -23,6 +25,7 @@ import CurrencyIcon from "@/components/CurrencyIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import { useIsFocused } from "@react-navigation/native";
 import { SkinPreview } from "@/components/SkinPreview";
+import { BundlePreview } from "@/components/BundlePreview";
 
 export default function Store() {
   const [tokens, setTokens] = useState({
@@ -38,7 +41,8 @@ export default function Store() {
   const [nightMarketTimeRemaining, setNightMarketTimeRemaining] = useState("");
   const [playerUUID, setPlayerUUID] = useState("");
   const [entitlementToken, setEntitlementToken] = useState("");
-  const [selectedSkin, setSelectedSkin] = useState<any | null>(null); // Estado para la skin seleccionada
+  const [selectedSkin, setSelectedSkin] = useState<any | null>(null);
+  const [selectedBundle, setSelectedBundle] = useState<any | null>(null);
   const [videoPreview, setVideoPreview] = useState<any>(null);
   const [inWishlist, setInWishlist] = useState<boolean>(false);
   const [debugStoreData, setDebugStoreData] = useState<any>([]);
@@ -46,7 +50,8 @@ export default function Store() {
 
   useEffect(() => {
     if (!isFocused) {
-      setSelectedSkin(null); // Resetea isSkinPanelShown cuando la pantalla pierde el foco
+      setSelectedSkin(null);
+      setSelectedBundle(null);
     }
   }, [isFocused]);
 
@@ -94,9 +99,11 @@ export default function Store() {
         setFeaturedBundleData(featuredBundle);
       });
 
+      console.log(JSON.stringify(featuredBundle, null, 1));
+
       setDebugStoreData(nightMarket);
     } catch (error) {
-      console.log("error fetching store data: " + error);
+      console.error("error fetching store data: " + error);
     }
   };
 
@@ -113,7 +120,7 @@ export default function Store() {
           return "00:00:00:00";
         });
       } catch (error) {
-        console.log(
+        console.error(
           "error fetching store data in calculating time remaining: " + error
         );
       }
@@ -143,7 +150,7 @@ export default function Store() {
           return "00:00:00:00";
         });
       } catch (error) {
-        console.log(
+        console.error(
           "error fetching store data in calculating time remaining: " + error
         );
       }
@@ -173,7 +180,7 @@ export default function Store() {
           return "00:00:00";
         });
       } catch (error) {
-        console.log(
+        console.error(
           "error fetching store data in calculating time remaining: " + error
         );
       }
@@ -271,8 +278,6 @@ export default function Store() {
     if (show) {
       const skin = await getSkin(skinUUID);
       setSelectedSkin(skin);
-
-      console.log(JSON.stringify(skin, null, 1));
 
       const lastLevel: any = Object.keys(skin.levels).sort().reverse()[0];
 
@@ -413,7 +418,7 @@ export default function Store() {
                     >
                       <>
                         <LinearGradient
-                          colors={["rgba(0,0,0,0.1)", skin.VariantColor]}
+                          colors={["rgba(0,0,0,0.1)", skin.TierColor]}
                           style={{
                             position: "absolute",
                             width: "100%",
@@ -541,8 +546,10 @@ export default function Store() {
               {featuredBundleData && featuredBundleData.displayIcon && (
                 <TouchableHighlight
                   activeOpacity={0.25}
-                  underlayColor={Colors.dark.cardPress}
-                  onPress={() => {}}
+                  underlayColor={Colors.dark.card}
+                  onPress={() => {
+                    setSelectedBundle(featuredBundleData);
+                  }}
                   style={{
                     marginBottom: 20,
                     borderWidth: 1,
@@ -561,6 +568,19 @@ export default function Store() {
                         aspectRatio: 16 / 9,
                       }}
                     />
+                    <LinearGradient
+                      colors={[
+                        "rgba(0,0,0,0.6)",
+                        "rgba(0,0,0,0.5)",
+                        "transparent",
+                      ]}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        position: "absolute",
+                        aspectRatio: 16 / 9,
+                      }}
+                    ></LinearGradient>
                     <View
                       style={{
                         width: "100%",
@@ -756,7 +776,7 @@ export default function Store() {
                   >
                     <>
                       <LinearGradient
-                        colors={["rgba(0,0,0,0.1)", skin.VariantColor]}
+                        colors={["rgba(0,0,0,0.1)", skin.TierColor]}
                         style={{
                           position: "absolute",
                           width: "100%",
@@ -854,6 +874,12 @@ export default function Store() {
           handleWishlistPress={handleWishlistPress}
           setSelectedSkin={setSelectedSkin}
           price={selectedSkin.Cost}
+        />
+      )}
+      {selectedBundle && (
+        <BundlePreview
+          bundleData={selectedBundle}
+          setSelectedBundle={setSelectedBundle}
         />
       )}
     </View>

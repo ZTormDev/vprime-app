@@ -12,6 +12,7 @@ import {
   fetchSkinsWishList,
   loadVersion,
   getBundles,
+  getContentTiers,
 } from "./API/valorant-api";
 import {
   usePushNotifications,
@@ -147,6 +148,7 @@ export default function Index() {
             await getBundles()
               .then(async () => {
                 await checkTokens();
+                await getContentTiers();
               })
               .catch((error) => {
                 console.error("Error fetching bundles:", error);
