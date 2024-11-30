@@ -1,5 +1,6 @@
 import React from "react";
 import { Image, StyleSheet, ImageStyle } from "react-native";
+import { Colors } from "react-native/Libraries/NewAppScreen";
 
 interface Props {
   icon: "vp" | "rad";
@@ -9,10 +10,18 @@ interface Props {
 
 export default function CurrencyIcon(props: Props) {
   const { size, style, icon } = props;
-  
+
   return (
     <Image
-      style={StyleSheet.flatten([{ width: size, height: size}, style])}
+      style={StyleSheet.flatten([
+        {
+          width: size,
+          height: size,
+          tintColor: Colors.dark.text,
+          marginBottom: 2,
+        },
+        style,
+      ])}
       source={
         icon === "vp"
           ? require("../assets/images/vp.png")

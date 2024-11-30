@@ -7,6 +7,8 @@ import {
   StyleSheet,
   Image,
   Alert,
+  Modal,
+  Pressable,
 } from "react-native";
 import { TabBarIcon } from "./navigation/TabBarIcon";
 import { Colors } from "@/constants/Colors";
@@ -23,10 +25,7 @@ export const SkinPreview = ({
 }) => {
   // Add a new state to manage the current video
   const [currentVideoPreview, setCurrentVideoPreview] = useState(videoPreview);
-
-  const showAlert = () => {
-    Alert.alert("Variant video not found.");
-  };
+  const [modalVisible, setModalVisible] = useState(false);
 
   return (
     <View
@@ -53,33 +52,64 @@ export const SkinPreview = ({
           borderRadius: 2,
           borderWidth: 1,
           borderColor: Colors.dark.cardPress,
-          gap: 25,
+          gap: 15,
         }}
       >
-        <View style={{ width: "100%", gap: 3, flexDirection: "column" }}>
-          <Text
-            style={{
-              fontFamily: "Rubik500",
-              color: "white",
-              fontSize: 28,
-              textAlign: "center",
-            }}
+        <View
+          style={{
+            width: "100%",
+            gap: 0,
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
+        >
+          <View
+            style={{ flexDirection: "column", width: price ? "75%" : "100%" }}
           >
-            {selectedSkin.displayName}
-          </Text>
+            <Text
+              style={{
+                fontFamily: "Rubik500",
+                color: Colors.dark.text,
+                fontSize: 25,
+                textAlign: "left",
+                margin: 0,
+                padding: 0,
+              }}
+            >
+              {selectedSkin.displayName}
+            </Text>
+            {selectedSkin.TierName && selectedSkin.TierColor && (
+              <Text
+                style={{
+                  fontFamily: "Rubik400",
+                  color: selectedSkin.TierColor,
+                  fontSize: 18,
+                  textAlign: "left",
+                  margin: 0,
+                  marginTop: -8,
+                  padding: 0,
+                }}
+              >
+                {selectedSkin.TierName}
+              </Text>
+            )}
+          </View>
           {price && (
             <View
               style={{
                 flexDirection: "row",
-                justifyContent: "center",
+                justifyContent: "flex-end",
                 alignItems: "center",
+                gap: 3,
+                marginTop: 5,
               }}
             >
-              <CurrencyIcon icon="vp" size={30} />
+              <CurrencyIcon icon="vp" size={24} />
               <Text
                 style={{
                   color: Colors.dark.text,
-                  fontSize: 25,
+                  fontSize: 19,
                   fontFamily: "Rubik400",
                 }}
               >
@@ -161,7 +191,7 @@ export const SkinPreview = ({
                       );
 
                       if (chroma.streamedVideo == null && index != 0) {
-                        showAlert();
+                        setModalVisible(true);
                       }
                     }}
                     activeOpacity={0.25}
@@ -208,7 +238,6 @@ export const SkinPreview = ({
                 color: Colors.dark.text,
                 fontFamily: "Rubik400",
                 fontSize: 16,
-                marginBlock: -5,
               }}
             >
               No variants found.
@@ -253,9 +282,9 @@ export const SkinPreview = ({
           <TouchableHighlight
             onPress={() => setSelectedSkin(null)}
             activeOpacity={0.25}
-            underlayColor={Colors.accent.darkColor}
+            underlayColor={Colors.accent.darkRed}
             style={{
-              backgroundColor: Colors.accent.color,
+              backgroundColor: Colors.accent.red,
               borderRadius: 2,
               padding: 6,
               width: "100%",
@@ -264,7 +293,7 @@ export const SkinPreview = ({
             <Text
               style={{
                 fontFamily: "Rubik500",
-                color: "white",
+                color: Colors.dark.text,
                 fontSize: 20,
                 textAlign: "center",
               }}
@@ -274,14 +303,77 @@ export const SkinPreview = ({
           </TouchableHighlight>
         </View>
       </View>
+
+      <Modal animationType="fade" transparent={true} visible={modalVisible}>
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalText}>Variant video not found.</Text>
+            <Pressable
+              style={[styles.button, styles.buttonClose]}
+              onPress={() => setModalVisible(!modalVisible)}
+            >
+              <Text style={styles.textStyle}>Close</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
 
+const styles = StyleSheet.create({
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  modalView: {
+    backgroundColor: Colors.dark.background,
+    borderRadius: 2,
+    padding: 15,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    height: 125,
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: "75%",
+    borderWidth: 1,
+    borderColor: Colors.dark.cardPress,
+    justifyContent: "space-between",
+  },
+  button: {
+    borderRadius: 2,
+    padding: 8,
+    width: "100%",
+    elevation: 2,
+  },
+  buttonClose: {
+    backgroundColor: Colors.accent.red,
+  },
+  textStyle: {
+    color: Colors.dark.text,
+    fontFamily: "Rubik500",
+    textAlign: "center",
+    fontSize: 18,
+  },
+  modalText: {
+    color: Colors.dark.text,
+    fontFamily: "Rubik400",
+    textAlign: "center",
+    fontSize: 18,
+  },
+});
+
 const Styles = StyleSheet.create({
   addWishListButton: {
     borderWidth: 2,
-    borderColor: Colors.accent.red,
+    borderColor: Colors.accent.darkRed,
     backgroundColor: "transparent",
     borderRadius: 2,
     padding: 6,

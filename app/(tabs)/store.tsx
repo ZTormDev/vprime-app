@@ -5,6 +5,7 @@ import {
   Text,
   Image,
   TouchableHighlight,
+  ActivityIndicator,
 } from "react-native";
 import React from "react";
 import axios from "axios";
@@ -854,16 +855,19 @@ export default function Store() {
             </View>
           </ScrollView>
         ) : (
-          <Text
-            style={{
-              fontFamily: "Rubik600",
-              color: Colors.accent.color,
-              fontSize: 26,
-              textAlign: "center",
-            }}
-          >
-            Loading...
-          </Text>
+          <>
+            <Text
+              style={{
+                fontFamily: "Rubik600",
+                color: Colors.accent.color,
+                fontSize: 26,
+                textAlign: "center",
+              }}
+            >
+              Loading...
+            </Text>
+            <ActivityIndicator size="large" color={Colors.accent.color} />
+          </>
         )}
       </ScrollView>
       {selectedSkin && (

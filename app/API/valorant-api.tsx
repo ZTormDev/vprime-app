@@ -84,7 +84,6 @@ function parseFeaturedBundle(shop: any) {
   let items: any[] = [];
 
   featuredBundle = {};
-
   let bundle: any = bundles.find(
     (bundle: any) => bundle.uuid === featuredBundleObject.DataAssetID
   );
@@ -99,7 +98,12 @@ function parseFeaturedBundle(shop: any) {
 
       if (skin != null && skin != undefined) {
         // Obtén el precio descontado directamente
-        let costValue = featuredBundleItems[i].DiscountedPrice;
+        let costValue = null;
+        if (featuredBundleItems[i].DiscountedPrice == 0) {
+          costValue = featuredBundleItems[i].BasePrice;
+        } else {
+          costValue = featuredBundleItems[i].DiscountedPrice;
+        }
 
         if (costValue) {
           skin.Cost = formatNumberWithCommas(costValue);
@@ -111,6 +115,7 @@ function parseFeaturedBundle(shop: any) {
 
         if (skinTier) {
           skin.TierColor = getTierColor(skinTier);
+          skin.TierName = skinTier.displayName;
         }
 
         items.push(skin);
@@ -167,6 +172,7 @@ export async function parseShop(shop: any) {
 
       if (skinTier) {
         skin.TierColor = getTierColor(skinTier);
+        skin.TierName = skinTier.displayName;
       }
 
       storeSkins.OffersTimeRemaining =
@@ -180,10 +186,7 @@ export async function parseShop(shop: any) {
 }
 
 function parseNightMarket(shop: any) {
-  nightMarket = {
-    Offers: [], // Aquí será un arreglo plano de objetos de skins
-    TimeRemaining: 0,
-  };
+  nightMarket = null;
 
   if (shop.BonusStore != null && shop.BonusStore != undefined) {
     let nightMarketOffers: any[] = shop.BonusStore.BonusStoreOffers;
@@ -213,6 +216,7 @@ function parseNightMarket(shop: any) {
 
         if (skinTier) {
           skin.TierColor = getTierColor(skinTier);
+          skin.TierName = skinTier.displayName;
         }
 
         // Agregar cada skin individualmente a nightMarket.Offers
@@ -232,7 +236,6 @@ export async function getSkin(skinUUID: string) {
   let skin: any = storeSkins.find(
     (skin: any) => skin.levels[0].uuid === skinUUID
   );
-
   return skin;
 }
 

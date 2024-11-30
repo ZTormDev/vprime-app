@@ -1,4 +1,4 @@
-import { Alert, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Text, View } from "react-native";
 import { WebView } from "react-native-webview";
 import { jwtDecode, JwtPayload } from "jwt-decode";
 import React, { useEffect, useState } from "react";
@@ -257,6 +257,7 @@ export default function Index() {
               >
                 Fetching data...
               </Text>
+              <ActivityIndicator size="large" color={Colors.accent.color} />
             </View>
           )}
         </>
