@@ -1,7 +1,7 @@
 {
   "name": "vprime",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "1.7",
   "scripts": {
     "start": "expo start --go",
     "device": "npx expo run:android",
