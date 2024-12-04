@@ -1,7 +1,7 @@
 const { execSync } = require("child_process");
 const { version } = require("../package.json");
 
-const outputFilename = `../builds/android/vprime-v${version}.apk`;
+const outputFilename = `./builds/android/vprime-v${version}.apk`;
 
 try {
   console.log(`Building APK: ${outputFilename}`);
