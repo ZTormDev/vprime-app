@@ -1,6 +1,6 @@
 workflows:
   hello-world:
-    name: Hello world workflow
+    name: IOS BUILD
 
     scripts:
-      - echo "Hello World!"
+      - node ./scripts/ios-build-script.js
