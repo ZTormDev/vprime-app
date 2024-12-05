@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   ScrollView,
@@ -19,78 +19,53 @@ import {
   nightMarket,
   contentTiers,
   skins,
+  AccessToken,
+  Shard,
+  PlayerUUID,
+  EntitlementsToken,
 } from "../API/valorant-api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Colors } from "@/constants/Colors";
 import CurrencyIcon from "@/components/CurrencyIcon";
 import { LinearGradient } from "expo-linear-gradient";
-import { useIsFocused } from "@react-navigation/native";
 import { SkinPreview } from "@/components/SkinPreview";
 import { BundlePreview } from "@/components/BundlePreview";
+import { useNavigation } from "@react-navigation/native";
 
 export default function Store() {
-  const [tokens, setTokens] = useState({
-    accessToken: "",
-    idToken: "",
-    expiresIn: "",
-  });
   const [storeData, setStoreData] = useState<any>([]);
   const [featuredBundleData, setFeaturedBundleData] = useState<any>([]);
   const [OffersTimeRemaining, setOffersTimeRemaining] = useState("");
   const [featuredBundleTimeRemaining, setFeaturedBundleTimeRemaining] =
     useState("");
   const [nightMarketTimeRemaining, setNightMarketTimeRemaining] = useState("");
-  const [playerUUID, setPlayerUUID] = useState("");
-  const [entitlementToken, setEntitlementToken] = useState("");
   const [selectedSkin, setSelectedSkin] = useState<any | null>(null);
   const [selectedBundle, setSelectedBundle] = useState<any | null>(null);
   const [videoPreview, setVideoPreview] = useState<any>(null);
   const [inWishlist, setInWishlist] = useState<boolean>(false);
   const [debugStoreData, setDebugStoreData] = useState<any>([]);
-  const isFocused = useIsFocused();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const navigation = useNavigation();
 
   useEffect(() => {
-    if (!isFocused) {
+    const unsubscribe = navigation.addListener("blur", () => {
       setSelectedSkin(null);
       setSelectedBundle(null);
-    }
-  }, [isFocused]);
+      scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
+    });
 
-  useEffect(() => {
-    const fetchTokens = async () => {
-      try {
-        const accessToken = (await AsyncStorage.getItem("accessToken")) ?? "";
-        const idToken = (await AsyncStorage.getItem("idToken")) ?? "";
-        const expiresIn = (await AsyncStorage.getItem("expiresIn")) ?? "";
-        const playerUUID = (await AsyncStorage.getItem("playerUUID")) ?? "";
-        const entitlementToken =
-          (await AsyncStorage.getItem("entitlementToken")) ?? "";
+    return unsubscribe;
+  }, [navigation]);
 
-        setEntitlementToken(entitlementToken);
-        setPlayerUUID(playerUUID);
-        setTokens({ accessToken, idToken, expiresIn });
-      } catch (error) {
-        console.error("Error al obtener los tokens de AsyncStorage:", error);
-      }
-    };
-    fetchTokens();
-  }, []);
-
-  const fetchStoreData = async (
-    entitlementToken: string,
-    accessToken: string,
-    playerUUID: string
-  ) => {
-    const shard = "na";
+  const fetchStoreData = async () => {
     try {
       const response = await axios.request({
-        url: `https://pd.${shard}.a.pvp.net/store/v3/storefront/${playerUUID}`,
+        url: `https://pd.${Shard}.a.pvp.net/store/v3/storefront/${PlayerUUID}`,
         method: "POST",
         headers: {
           ...extraHeaders,
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-          "X-Riot-Entitlements-JWT": entitlementToken,
+          Authorization: `Bearer ${AccessToken}`,
+          "X-Riot-Entitlements-JWT": EntitlementsToken,
         },
         data: {},
       });
@@ -100,7 +75,7 @@ export default function Store() {
         setFeaturedBundleData(featuredBundle);
       });
 
-      console.log(JSON.stringify(featuredBundle, null, 1));
+      // console.log(JSON.stringify(featuredBundle, null, 1));
 
       setDebugStoreData(nightMarket);
     } catch (error) {
@@ -113,11 +88,7 @@ export default function Store() {
   ) => {
     if (initialSeconds <= 0) {
       try {
-        await fetchStoreData(
-          entitlementToken,
-          tokens.accessToken,
-          playerUUID
-        ).then(() => {
+        await fetchStoreData().then(() => {
           return "00:00:00:00";
         });
       } catch (error) {
@@ -143,11 +114,7 @@ export default function Store() {
   const calculateNightMarketTimeRemaining = async (initialSeconds: number) => {
     if (initialSeconds <= 0) {
       try {
-        await fetchStoreData(
-          entitlementToken,
-          tokens.accessToken,
-          playerUUID
-        ).then(() => {
+        await fetchStoreData().then(() => {
           return "00:00:00:00";
         });
       } catch (error) {
@@ -173,11 +140,7 @@ export default function Store() {
   const calculateOffersTimeRemaining = async (initialSeconds: number) => {
     if (initialSeconds <= 0) {
       try {
-        await fetchStoreData(
-          entitlementToken,
-          tokens.accessToken,
-          playerUUID
-        ).then(() => {
+        await fetchStoreData().then(() => {
           return "00:00:00";
         });
       } catch (error) {
@@ -264,8 +227,8 @@ export default function Store() {
   useEffect(() => {
     const getAllData = async () => {
       try {
-        if (tokens.accessToken && playerUUID && entitlementToken) {
-          fetchStoreData(entitlementToken, tokens.accessToken, playerUUID);
+        if (AccessToken && PlayerUUID && EntitlementsToken) {
+          fetchStoreData();
         }
       } catch (error) {
         console.error("Error checking login status", error);
@@ -273,7 +236,7 @@ export default function Store() {
     };
 
     getAllData();
-  }, [tokens.accessToken, playerUUID, entitlementToken]);
+  }, [AccessToken, PlayerUUID, EntitlementsToken]);
 
   const showSkinPanel = async (show: boolean, skinUUID: any) => {
     if (show) {
@@ -296,6 +259,7 @@ export default function Store() {
   return (
     <View style={{ flexGrow: 1, width: "100%", backgroundColor: "#252525" }}>
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={{
           flexGrow: 1,
           justifyContent: "center",
@@ -303,16 +267,15 @@ export default function Store() {
           zIndex: 1,
         }}
       >
-        {/* <Text style={{color:'white'}}>
-        {JSON.stringify(debugStoreData.Offers[0], null, 1)}
-      </Text> */}
+        {/* <Text style={{ color: "white" }}>{JSON.stringify(Shard, null, 1)}</Text> */}
 
-        {tokens.accessToken &&
+        {AccessToken &&
         storeData &&
         featuredBundleData &&
         storeSkins &&
         featuredBundle ? (
           <ScrollView
+            ref={scrollViewRef}
             style={{ width: "100%", marginBottom: 25, marginTop: 15 }}
           >
             {nightMarket && (

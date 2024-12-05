@@ -13,13 +13,31 @@ import {
   loadVersion,
   getBundles,
   getContentTiers,
+  GetPlayerLoadout,
+  getPlayerCard,
+  getMatchHistory,
+  SetPlayerUUID,
+  SetAccountShard,
+  SetAccessToken,
+  SetIdToken,
+  SetExpiresIn,
+  SetTagline,
+  SetGameName,
+  AccessToken,
+  SetEntitlementsToken,
+  EntitlementsToken,
+  PlayerUUID,
+  skins,
+  MatchHistoryData,
+  PlayerCard,
+  bundles,
+  PlayerLoadout,
+  Shard,
 } from "./API/valorant-api";
 import {
   usePushNotifications,
   setNotificationsEnabled,
 } from "./API/notifications-api";
-import VersionCheck from "react-native-version-check";
-
 interface CustomJwtPayload extends JwtPayload {
   acct: {
     game_name: string;
@@ -62,13 +80,13 @@ export default function Index() {
   const [webViewShow, setShowWebView] = useState<boolean>(true);
   const riotAuth =
     "https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid";
-  const [PlayerName, SetPlayerName] = useState(null);
 
   usePushNotifications();
 
   useEffect(() => {
     fetchNotificationStatus();
     loadVersion();
+    checkTokens();
   }, []);
 
   const fetchNotificationStatus = async () => {
@@ -83,12 +101,6 @@ export default function Index() {
   };
 
   const extractTokensFromUrl = async (url: string) => {
-    AsyncStorage.removeItem("accessToken");
-    AsyncStorage.removeItem("idToken");
-    AsyncStorage.removeItem("expiresIn");
-    AsyncStorage.removeItem("playerUUID");
-    AsyncStorage.removeItem("entitlementToken");
-
     const accessTokenMatch = url.match(/access_token=([^&]*)/);
     const idTokenMatch = url.match(/id_token=([^&]*)/);
     const expiresInMatch = url.match(/expires_in=([^&]*)/);
@@ -100,7 +112,7 @@ export default function Index() {
 
       // Decoding the tokens using jwtDecode
       const accessTokenDecoded = jwtDecode<JwtPayload>(accessToken);
-      const idTokenDecoded = jwtDecode<CustomJwtPayload>(idToken); // Use the custom interface here
+      const idTokenDecoded = jwtDecode<CustomJwtPayload>(idToken);
 
       const playerUUIDstring = JSON.stringify(accessTokenDecoded.sub).replace(
         /"/g,
@@ -108,79 +120,65 @@ export default function Index() {
       );
       const playerUUID = playerUUIDstring;
 
-      AsyncStorage.setItem("accessToken", accessToken);
-      AsyncStorage.setItem("idToken", idToken);
-      AsyncStorage.setItem("expiresIn", expiresIn);
-      AsyncStorage.setItem("playerUUID", playerUUID);
+      // Set the tokens and other values
+      SetPlayerUUID(playerUUID);
+      SetAccessToken(accessToken);
+      SetIdToken(idToken);
+      SetAccountShard();
+      SetExpiresIn(expiresIn);
+      SetTagline(idTokenDecoded.acct.tag_line);
+      SetGameName(idTokenDecoded.acct.game_name);
 
-      const gameName: string =
-        idTokenDecoded.acct.game_name + "#" + idTokenDecoded.acct.tag_line; // This should work now
+      // Fetch data only after tokens are set
+      await getContentTiers();
+      await fetchSkinsWishList();
+      await getEntitlementToken(); // Make sure we await the response here
+      await GetPlayerLoadout();
+      await getMatchHistory();
+      await getPlayerCard();
+      await getGameSkins();
+      await getBundles();
 
-      SetPlayerName(gameName);
-      AsyncStorage.setItem("PlayerName", gameName);
-
-      await fetchSkinsWishList().then(async (res) => {
-        await getEntitlementToken(accessToken);
-      });
+      // Once everything is fetched, check tokens
+      checkTokens();
     }
   };
 
-  const getEntitlementToken = async (accessToken: string) => {
+  async function getEntitlementToken() {
     await axios
       .post(
         "https://entitlements.auth.riotgames.com/api/token/v1",
         {},
         {
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${AccessToken}`,
             "Content-Type": "application/json",
           },
         }
       )
       .then(async (response) => {
-        AsyncStorage.setItem(
-          "entitlementToken",
-          response.data.entitlements_token
-        );
-
-        await getGameSkins()
-          .then(async () => {
-            await getBundles()
-              .then(async () => {
-                await checkTokens();
-                await getContentTiers();
-              })
-              .catch((error) => {
-                console.error("Error fetching bundles:", error);
-              });
-          })
-          .catch((error) => {
-            console.error("Error fetching skins:", error);
-          });
+        SetEntitlementsToken(response.data.entitlements_token);
       });
-  };
+  }
 
-  const checkTokens = async () => {
-    await AsyncStorage.getItem("accessToken").then(async (accessToken) => {
-      if (accessToken) {
-        await AsyncStorage.getItem("entitlementToken").then(
-          async (entitlementToken) => {
-            if (entitlementToken) {
-              await AsyncStorage.getItem("playerUUID").then((playerUUID) => {
-                if (playerUUID) {
-                  setLogged(true);
-                  console.log("Estás logeado, tienes los tokens");
-                } else {
-                  setLogged(false);
-                  console.log("No estas logeado faltan tokens");
-                }
-              });
-            }
-          }
-        );
-      }
-    });
-  };
+  function checkTokens() {
+    console.warn("CHECKING TOKENS");
+
+    if (
+      AccessToken &&
+      EntitlementsToken &&
+      PlayerUUID &&
+      Shard &&
+      skins &&
+      bundles
+    ) {
+      setLogged(true);
+      console.log("Estás logeado, tienes todos los tokens");
+    } else {
+      setLogged(false);
+      console.log("No estás logeado, faltan tokens");
+    }
+  }
 
   return (
     <>

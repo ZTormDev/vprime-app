@@ -175,8 +175,8 @@ export const SkinPreview = ({
                 style={{
                   flexDirection: "row",
                   width: "85%",
-                  gap: 10,
-                  justifyContent: "space-between",
+                  gap: 20,
+                  justifyContent: "center",
                   alignItems: "center",
                   marginBottom: 15,
                 }}
@@ -190,7 +190,8 @@ export const SkinPreview = ({
                         chroma.streamedVideo || videoPreview
                       );
 
-                      if (chroma.streamedVideo == null && index != 0) {
+                      // If there's no video and it's not the first index, show the modal
+                      if (chroma.streamedVideo == null && index !== 0) {
                         setModalVisible(true);
                       }
                     }}
@@ -200,10 +201,12 @@ export const SkinPreview = ({
                     <View
                       style={{
                         opacity:
-                          currentVideoPreview ===
-                          (chroma.streamedVideo || videoPreview)
+                          chroma.streamedVideo === null && index !== 0
+                            ? 0.25 // Lower opacity for chromas without video (except the first one)
+                            : currentVideoPreview ===
+                              (chroma.streamedVideo || videoPreview)
                             ? 1
-                            : 0.4,
+                            : 0.25,
                         borderWidth: 2,
                         borderColor:
                           currentVideoPreview ===
@@ -226,7 +229,7 @@ export const SkinPreview = ({
                           borderRadius: 1,
                         }}
                         resizeMode="cover"
-                      ></Image>
+                      />
                     </View>
                   </TouchableHighlight>
                 ))}
@@ -259,7 +262,9 @@ export const SkinPreview = ({
                 : Styles.removeWishListButton
             }
           >
-            <View style={{ flexDirection: "row", gap: 5 }}>
+            <View
+              style={{ flexDirection: "row", gap: 10, alignItems: "center" }}
+            >
               <Text
                 style={{
                   fontFamily: "Rubik500",
@@ -273,8 +278,11 @@ export const SkinPreview = ({
               <TabBarIcon
                 name={!inWishlist ? "heart-outline" : "heart"}
                 color={Colors.accent.red}
-                style={{ fontWeight: 700 }}
-                size={30}
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                size={28}
               />
             </View>
           </TouchableHighlight>

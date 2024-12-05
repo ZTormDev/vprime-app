@@ -13,6 +13,18 @@ export let nightMarket: any = {
 export let storeSkins: any = [];
 export let wishListSkins: any = [];
 export let contentTiers: any = {};
+export let PlayerLoadout: any = {};
+export let PlayerCard: any = {};
+export let MatchHistoryData: any = {};
+
+export let AccessToken: any = null;
+export let IdToken: any = null;
+export let EntitlementsToken: any = null;
+export let ExpiresIn: any = null;
+export let PlayerUUID: any = null;
+export let Shard: any = null;
+export let GameName: any = null;
+export let TagLine: any = null;
 
 export const extraHeaders = {
   "X-Riot-ClientVersion": "43.0.1.4195386.4190634",
@@ -25,6 +37,155 @@ export const extraHeaders = {
     })
   ),
 };
+
+export const matchDetails = async (
+  shard: any,
+  authToken: any,
+  entitlementToken: any,
+  matchID: any
+) => {
+  const url = `https://pd.${shard}.a.pvp.net/match-details/v1/matches/${matchID}`;
+
+  const headers = {
+    "X-Riot-ClientPlatform": extraHeaders["X-Riot-ClientPlatform"],
+    "X-Riot-ClientVersion": extraHeaders["X-Riot-ClientVersion"],
+    "X-Riot-Entitlements-JWT": entitlementToken,
+    Authorization: `Bearer ${authToken}`,
+  };
+
+  await axios
+    .get(url, { headers })
+    .then((response) => {
+      return response.data;
+    })
+    .catch((error) => {
+      console.error("Failed to get match details: " + error);
+    });
+};
+
+export async function getMatchHistory() {
+  MatchHistoryData = null;
+  const startIndex = "0";
+  const endIndex = "10";
+
+  const url = `https://pd.${Shard}.a.pvp.net/match-history/v1/history/${PlayerUUID}?startIndex=${startIndex}&endIndex=${endIndex}`;
+
+  const headers = {
+    "X-Riot-ClientPlatform": extraHeaders["X-Riot-ClientPlatform"],
+    "X-Riot-ClientVersion": extraHeaders["X-Riot-ClientVersion"],
+    "X-Riot-Entitlements-JWT": EntitlementsToken,
+    Authorization: `Bearer ${AccessToken}`,
+  };
+
+  await axios
+    .get(url, { headers })
+    .then((response) => {
+      MatchHistoryData = response.data;
+    })
+    .catch((error) => {
+      console.error("ERROR AL CONSEGUIR PLAYER MATCH HISTORY: " + error);
+    });
+}
+
+export async function getPlayerCard() {
+  PlayerCard = null;
+
+  const url = `https://valorant-api.com/v1/playercards/${PlayerLoadout.Identity.PlayerCardID}`;
+  await axios
+    .get(url)
+    .then((response) => {
+      PlayerCard = response.data.data;
+    })
+    .catch((error) => {
+      console.error("ERROR AL CONSEGUIR PLAYER CARD: " + error);
+    });
+}
+
+export async function GetPlayerLoadout() {
+  PlayerLoadout = null;
+
+  // Configura la URL del endpoint
+  const url = `https://pd.${Shard}.a.pvp.net/personalization/v2/players/${PlayerUUID}/playerloadout`;
+
+  // Configura los headers requeridos
+  const headers = {
+    "X-Riot-ClientPlatform": extraHeaders["X-Riot-ClientPlatform"],
+    "X-Riot-ClientVersion": extraHeaders["X-Riot-ClientVersion"],
+    "X-Riot-Entitlements-JWT": EntitlementsToken,
+    Authorization: `Bearer ${AccessToken}`,
+  };
+
+  // Realiza la solicitud
+  await axios
+    .get(url, { headers })
+    .then((response) => {
+      // Devuelve la respuesta
+      PlayerLoadout = response.data;
+    })
+    .catch((error) => {
+      console.error("ERROR AL CONSEGUIR PLAYER LOADOUT: " + error);
+    });
+}
+
+export function SetPlayerUUID(puuid: any) {
+  PlayerUUID = puuid;
+}
+export function SetAccessToken(access_token: any) {
+  AccessToken = access_token;
+}
+export function SetIdToken(id_token: any) {
+  IdToken = id_token;
+}
+export function SetExpiresIn(expires: any) {
+  ExpiresIn = expires;
+}
+export function SetTagline(tagline: any) {
+  TagLine = tagline;
+}
+export function SetGameName(gamename: any) {
+  GameName = gamename;
+}
+export function SetEntitlementsToken(token: any) {
+  EntitlementsToken = token;
+}
+
+export async function SetAccountShard() {
+  try {
+    const res = await axios.request({
+      url: "https://riot-geo.pas.si.riotgames.com/pas/v1/product/valorant",
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${AccessToken}`,
+        "Content-Type": "application/json",
+      },
+      data: {
+        id_token: IdToken,
+      },
+    });
+
+    const live = res.data.affinities.live;
+    switch (live) {
+      case "latam":
+        return (Shard = "na");
+      case "br":
+        return (Shard = "na");
+      case "na":
+        return (Shard = "na");
+      case "eu":
+        return (Shard = "eu");
+      case "ap":
+        return (Shard = "ap");
+      case "kr":
+        return (Shard = "kr");
+    }
+  } catch (error: any) {
+    console.error(
+      "Error fetching shard information:",
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+}
 
 export async function loadVersion() {
   try {

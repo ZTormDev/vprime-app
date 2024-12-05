@@ -9,7 +9,7 @@ import {
   Modal,
   TouchableOpacity,
 } from "react-native";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Text } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { addSkinToWishList, isInWishList, skins } from "../API/valorant-api";
@@ -26,6 +26,7 @@ export default function Skins() {
   const [videoPreview, setVideoPreview] = useState<any>(null);
   const [inWishlist, setInWishlist] = useState<boolean>(false);
   const navigation = useNavigation(); // Acceso al objeto de navegación
+  const flatListRef = useRef<FlatList>(null); // Referencia para FlatList
 
   // useEffect para escuchar los cambios de pantalla/tab
   useEffect(() => {
@@ -33,6 +34,9 @@ export default function Skins() {
       setSelectedSkin(null); // Restablece selectedSkin a null
       setSearchQuery(""); // Limpia el campo de búsqueda
       setVisibleSkins(skins); // Restablece las skins visibles
+
+      // Restablece la posición de la lista al inicio
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
     });
 
     return unsubscribe;
@@ -135,6 +139,7 @@ export default function Skins() {
       </Text>
 
       <FlatList
+        ref={flatListRef} // Conecta la referencia
         data={visibleSkins}
         keyExtractor={(item) => item.uuid}
         renderItem={({ item }) => (

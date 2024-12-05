@@ -27,7 +27,7 @@ export const Colors = {
   },
   text: {
     highlighted: '#39ffca',
-    active: '#3af1a2',
+    active: 'rgba(46,218,161,1)',
     dark: '#145e4b'
   }
 };

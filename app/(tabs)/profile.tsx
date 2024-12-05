@@ -10,7 +10,12 @@ import { Text } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { accountLogout } from "../index";
 import { TabBarIcon } from "@/components/navigation/TabBarIcon";
-import { isInWishList, wishListSkins } from "../API/valorant-api";
+import {
+  isInWishList,
+  PlayerCard,
+  PlayerLoadout,
+  wishListSkins,
+} from "../API/valorant-api";
 import { Switch } from "react-native-switch";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -21,15 +26,18 @@ import {
 } from "../API/notifications-api";
 import { useNavigation } from "@react-navigation/native";
 import { SkinPreview } from "@/components/SkinPreview";
+import { MatchHistory } from "@/components/MatchHistory";
 
 export default function Profile() {
   const [showWishlist, setShowWishlist] = useState<boolean | null>(null);
+  const [showMatchHistory, setShowMatchHistory] = useState<any | null>(null);
   const [selectedSkin, setSelectedSkin] = useState<any | null>(null);
   const [videoPreview, setVideoPreview] = useState<any>(null);
   const [inWishlist, setInWishlist] = useState<boolean>(false);
   const [notificationsEnabledF, setNotificationsEnabledF] = useState(true);
   const navigation = useNavigation(); // Acceso al objeto de navegación
-  const [PlayerName, SetPlayerName] = useState<string | null>("Player-Name");
+  const [GameName, setGameName] = useState<string | null>("Player-Name");
+  const [TagLine, setTagLine] = useState<string | null>("Player-Tag");
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("blur", () => {
@@ -42,10 +50,10 @@ export default function Profile() {
 
   useEffect(() => {
     const getPlayerName = async () => {
-      const PlayerName: string | null = await AsyncStorage.getItem(
-        "PlayerName"
-      );
-      SetPlayerName(PlayerName);
+      const gameName: string | null = await AsyncStorage.getItem("GameName");
+      setGameName(gameName);
+      const tagLine: string | null = await AsyncStorage.getItem("TagLine");
+      setTagLine(tagLine);
     };
     getPlayerName();
   }, []);
@@ -76,6 +84,14 @@ export default function Profile() {
     }
   };
 
+  const handleMatchHistory = () => {
+    if (showMatchHistory) {
+      setShowMatchHistory(false);
+    } else {
+      setShowMatchHistory(true);
+    }
+  };
+
   const handleSkinPress = async (skin: any) => {
     setSelectedSkin(skin);
     const lastLevel: any = Object.keys(skin.levels).sort().reverse()[0];
@@ -94,46 +110,111 @@ export default function Profile() {
         flexGrow: 1,
         justifyContent: "space-between",
         alignItems: "center",
-        padding: 20,
+        padding: 10,
         gap: 30,
       }}
     >
       <View
         style={{
+          filter: "blur(10px)",
+          width: "100%",
+          height: "100%",
+          top: 0,
+          left: 0,
+          zIndex: 0,
+          position: "absolute",
+          opacity: 0.25,
+          margin: 10,
+        }}
+      >
+        <Image
+          source={{ uri: PlayerCard.largeArt }}
+          style={{
+            width: "100%",
+            height: "100%",
+          }}
+        ></Image>
+      </View>
+
+      <View
+        style={{
           backgroundColor: Colors.dark.card,
+          borderWidth: 1,
+          borderColor: Colors.dark.cardPress,
           borderRadius: 2,
           padding: 20,
           width: "100%",
           height: "100%",
           justifyContent: "space-between",
+          zIndex: 1,
         }}
       >
-        <View>
+        <View style={{ justifyContent: "flex-start", alignItems: "center" }}>
           <View
             style={{
-              flexDirection: "column",
+              flexDirection: "row",
               width: "100%",
-              justifyContent: "center",
+              justifyContent: "flex-start",
               alignItems: "center",
-              gap: 10,
+              gap: 20,
               marginBottom: 30,
+              backgroundColor: Colors.dark.background,
+              padding: 10,
+              height: 80,
+              borderWidth: 1,
+              borderColor: Colors.dark.cardPress,
             }}
           >
-            <TabBarIcon
-              name="person-circle"
-              size={75}
-              color={Colors.accent.color}
-            ></TabBarIcon>
-            <Text
+            <View
               style={{
-                color: Colors.accent.highlighted,
-                fontSize: 25,
-                fontFamily: "Rubik500",
-                textAlign: "center",
+                aspectRatio: 4 / 4,
+                height: "100%",
+                overflow: "hidden",
+                borderRadius: 2,
+                borderWidth: 1,
+                borderColor: Colors.dark.cardPress,
+                justifyContent: "center",
+                alignItems: "center",
               }}
             >
-              {PlayerName}
-            </Text>
+              <Image
+                source={{ uri: PlayerCard.displayIcon }}
+                style={{ width: "100%", height: "100%" }}
+              ></Image>
+            </View>
+            <View
+              style={{
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "flex-start",
+                height: "100%",
+              }}
+            >
+              <Text
+                style={{
+                  color: Colors.text.highlighted,
+                  fontSize: 24,
+                  fontFamily: "Rubik500",
+                  textAlign: "center",
+                  padding: 0,
+                  marginBlock: -5,
+                }}
+              >
+                {GameName}
+              </Text>
+              <Text
+                style={{
+                  color: Colors.text.active,
+                  fontSize: 20,
+                  fontFamily: "Rubik500",
+                  textAlign: "center",
+                  padding: 0,
+                  marginBlock: -5,
+                }}
+              >
+                #{TagLine}
+              </Text>
+            </View>
           </View>
           <ScrollView style={{ width: "100%" }}>
             <View
@@ -142,6 +223,7 @@ export default function Profile() {
                 height: "100%",
                 alignItems: "center",
                 flexDirection: "column",
+                gap: 15,
               }}
             >
               <TouchableHighlight
@@ -152,21 +234,22 @@ export default function Profile() {
                   backgroundColor: Colors.accent.ultraDarkRed,
                   borderWidth: 1,
                   borderColor: Colors.accent.red,
-                  borderRadius: 50,
+                  borderRadius: 2,
                   padding: 6,
-                  width: "85%",
+                  width: "100%",
                 }}
               >
                 <View
                   style={{
                     flexDirection: "row",
-                    gap: 6,
+                    gap: 15,
                     justifyContent: "center",
+                    alignItems: "center",
                   }}
                 >
                   <Text
                     style={{
-                      fontSize: 22,
+                      fontSize: 20,
                       color: Colors.accent.red,
                       fontFamily: "Rubik500",
                     }}
@@ -176,7 +259,45 @@ export default function Profile() {
                   <TabBarIcon
                     name="heart"
                     color={Colors.accent.red}
-                    size={30}
+                    size={28}
+                    style={{ justifyContent: "center", alignItems: "center" }}
+                  ></TabBarIcon>
+                </View>
+              </TouchableHighlight>
+              <TouchableHighlight
+                onPress={handleMatchHistory}
+                activeOpacity={0.25}
+                underlayColor={Colors.dark.cardPress}
+                style={{
+                  backgroundColor: Colors.dark.tabBar,
+                  borderWidth: 1,
+                  borderColor: Colors.accent.color,
+                  borderRadius: 2,
+                  padding: 6,
+                  width: "100%",
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    gap: 15,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 20,
+                      color: Colors.accent.color,
+                      fontFamily: "Rubik500",
+                    }}
+                  >
+                    Match History
+                  </Text>
+                  <TabBarIcon
+                    name="time"
+                    color={Colors.accent.color}
+                    size={28}
                     style={{ justifyContent: "center", alignItems: "center" }}
                   ></TabBarIcon>
                 </View>
@@ -188,14 +309,16 @@ export default function Profile() {
           <Text
             onPress={accountLogout}
             style={{
-              fontSize: 25,
+              fontSize: 20,
               textAlign: "center",
               width: "100%",
               fontFamily: "Rubik500",
               color: Colors.dark.text,
               backgroundColor: Colors.accent.red,
-              padding: 4,
+              padding: 6,
               borderRadius: 2,
+              borderWidth: 1,
+              borderColor: Colors.accent.ultraDarkRed,
             }}
           >
             Log Out
@@ -395,6 +518,10 @@ export default function Profile() {
           setSelectedSkin={setSelectedSkin}
           price={selectedSkin.Cost}
         />
+      )}
+
+      {showMatchHistory && (
+        <MatchHistory setShowMatchHistory={setShowMatchHistory}></MatchHistory>
       )}
     </View>
   );
