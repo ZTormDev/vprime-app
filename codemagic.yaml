@@ -3,4 +3,6 @@ workflows:
     name: IOS BUILD
 
     scripts:
+      - npm i
+      - npm i eas-cli
       - node ./scripts/ios-build-script.js
