@@ -100,8 +100,8 @@ export default function Skins() {
           style={{
             backgroundColor: "white",
             borderRadius: 50,
-            padding: 15,
-            paddingHorizontal: 25,
+            padding: 12,
+            paddingHorizontal: 20,
             width: "90%",
             fontFamily: "Rubik500",
             fontSize: 18,
@@ -143,7 +143,7 @@ export default function Skins() {
         data={visibleSkins}
         keyExtractor={(item) => item.uuid}
         renderItem={({ item }) => (
-          <View style={{ alignItems: "center", marginBottom: 15 }}>
+          <View style={{ alignItems: "center", marginBottom: 10 }}>
             <TouchableHighlight
               key={item.uuid}
               onPress={() => {
@@ -156,6 +156,8 @@ export default function Skins() {
                 backgroundColor: Colors.dark.card,
                 borderRadius: 2,
                 width: "90%",
+                borderWidth: 1,
+                borderColor: Colors.dark.cardPress,
               }}
             >
               <View
@@ -166,8 +168,8 @@ export default function Skins() {
                   flexWrap: "nowrap",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  paddingHorizontal: 30,
-                  paddingVertical: 20,
+                  paddingHorizontal: 20,
+                  paddingVertical: 12,
                 }}
               >
                 <Text
@@ -175,7 +177,7 @@ export default function Skins() {
                     width: "60%",
                     fontFamily: "Rubik500",
                     color: "white",
-                    fontSize: 20,
+                    fontSize: 18,
                     flexWrap: "wrap",
                   }}
                 >

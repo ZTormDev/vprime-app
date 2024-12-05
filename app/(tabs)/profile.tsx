@@ -11,9 +11,11 @@ import { Colors } from "@/constants/Colors";
 import { accountLogout } from "../index";
 import { TabBarIcon } from "@/components/navigation/TabBarIcon";
 import {
+  GameName,
   isInWishList,
   PlayerCard,
   PlayerLoadout,
+  TagLine,
   wishListSkins,
 } from "../API/valorant-api";
 import { Switch } from "react-native-switch";
@@ -36,27 +38,16 @@ export default function Profile() {
   const [inWishlist, setInWishlist] = useState<boolean>(false);
   const [notificationsEnabledF, setNotificationsEnabledF] = useState(true);
   const navigation = useNavigation(); // Acceso al objeto de navegación
-  const [GameName, setGameName] = useState<string | null>("Player-Name");
-  const [TagLine, setTagLine] = useState<string | null>("Player-Tag");
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("blur", () => {
       setShowWishlist(false);
       setSelectedSkin(null);
+      setShowMatchHistory(false);
     });
 
     return unsubscribe;
   }, [navigation]);
-
-  useEffect(() => {
-    const getPlayerName = async () => {
-      const gameName: string | null = await AsyncStorage.getItem("GameName");
-      setGameName(gameName);
-      const tagLine: string | null = await AsyncStorage.getItem("TagLine");
-      setTagLine(tagLine);
-    };
-    getPlayerName();
-  }, []);
 
   useEffect(() => {
     setNotificationsEnabledF(notificationsEnabled);
@@ -182,39 +173,41 @@ export default function Profile() {
                 style={{ width: "100%", height: "100%" }}
               ></Image>
             </View>
-            <View
-              style={{
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems: "flex-start",
-                height: "100%",
-              }}
-            >
-              <Text
+            {GameName && TagLine && (
+              <View
                 style={{
-                  color: Colors.text.highlighted,
-                  fontSize: 24,
-                  fontFamily: "Rubik500",
-                  textAlign: "center",
-                  padding: 0,
-                  marginBlock: -5,
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "flex-start",
+                  height: "100%",
                 }}
               >
-                {GameName}
-              </Text>
-              <Text
-                style={{
-                  color: Colors.text.active,
-                  fontSize: 20,
-                  fontFamily: "Rubik500",
-                  textAlign: "center",
-                  padding: 0,
-                  marginBlock: -5,
-                }}
-              >
-                #{TagLine}
-              </Text>
-            </View>
+                <Text
+                  style={{
+                    color: Colors.text.highlighted,
+                    fontSize: 24,
+                    fontFamily: "Rubik500",
+                    textAlign: "center",
+                    padding: 0,
+                    marginBlock: -5,
+                  }}
+                >
+                  {GameName}
+                </Text>
+                <Text
+                  style={{
+                    color: Colors.text.active,
+                    fontSize: 20,
+                    fontFamily: "Rubik500",
+                    textAlign: "center",
+                    padding: 0,
+                    marginBlock: -5,
+                  }}
+                >
+                  #{TagLine}
+                </Text>
+              </View>
+            )}
           </View>
           <ScrollView style={{ width: "100%" }}>
             <View
@@ -426,8 +419,10 @@ export default function Profile() {
                   underlayColor={Colors.dark.cardPress}
                   style={{
                     backgroundColor: Colors.dark.card,
-                    borderRadius: 10,
+                    borderRadius: 2,
                     width: "90%",
+                    borderWidth: 1,
+                    borderColor: Colors.dark.cardPress,
                   }}
                 >
                   <View
@@ -438,7 +433,8 @@ export default function Profile() {
                       flexWrap: "nowrap",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      padding: 15,
+                      paddingHorizontal: 20,
+                      paddingBlock: 12,
                     }}
                   >
                     <Text

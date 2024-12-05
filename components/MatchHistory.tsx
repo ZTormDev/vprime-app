@@ -26,7 +26,8 @@ export const MatchHistory = ({ setShowMatchHistory }) => {
         top: 0,
         left: 0,
         margin: 10,
-        padding: 25,
+        paddingInline: 8,
+        paddingBlock: 20,
         justifyContent: "flex-start",
         alignItems: "center",
         backgroundColor: Colors.dark.background,
@@ -38,13 +39,15 @@ export const MatchHistory = ({ setShowMatchHistory }) => {
       <Text
         style={{
           color: Colors.dark.text,
-          fontSize: 20,
-          fontFamily: "Rubik500",
+          fontSize: 22,
+          fontFamily: "Rubik700",
+          padding: 8,
+          paddingBottom: 15,
         }}
       >
         MATCHES
       </Text>
-      <ScrollView>
+      <ScrollView contentContainerStyle={{ marginHorizontal: 15 }}>
         {MatchHistoryData.History.map((match, index) => (
           <TouchableOpacity
             key={index}
@@ -52,7 +55,9 @@ export const MatchHistory = ({ setShowMatchHistory }) => {
               marginVertical: 10,
               padding: 10,
               backgroundColor: Colors.dark.card,
-              borderRadius: 5,
+              borderRadius: 2,
+              borderWidth: 1,
+              borderColor: Colors.dark.cardPress,
             }}
             activeOpacity={0.7}
             onPress={() => handleMatchPress(match)}
@@ -76,7 +81,8 @@ export const MatchHistory = ({ setShowMatchHistory }) => {
         style={{
           backgroundColor: Colors.accent.red,
           marginTop: 10,
-          padding: 10,
+          padding: 8,
+          width: "92%",
           borderRadius: 5,
         }}
         activeOpacity={0.7}
