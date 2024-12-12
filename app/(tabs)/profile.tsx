@@ -12,9 +12,11 @@ import { accountLogout } from "../index";
 import { TabBarIcon } from "@/components/navigation/TabBarIcon";
 import {
   GameName,
+  getPlayerMMR,
   isInWishList,
   PlayerCard,
   PlayerLoadout,
+  PlayerMMR,
   TagLine,
   wishListSkins,
 } from "../API/valorant-api";
@@ -38,6 +40,14 @@ export default function Profile() {
   const [inWishlist, setInWishlist] = useState<boolean>(false);
   const [notificationsEnabledF, setNotificationsEnabledF] = useState(true);
   const navigation = useNavigation(); // Acceso al objeto de navegación
+
+  useEffect(() => {
+    const fetchPlayerMMR = async () => {
+      await getPlayerMMR();
+    };
+
+    fetchPlayerMMR();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("blur", () => {
@@ -140,12 +150,17 @@ export default function Profile() {
           zIndex: 1,
         }}
       >
-        <View style={{ justifyContent: "flex-start", alignItems: "center" }}>
+        <View
+          style={{
+            justifyContent: "flex-start",
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
           <View
             style={{
               flexDirection: "row",
               width: "100%",
-              justifyContent: "flex-start",
               alignItems: "center",
               gap: 20,
               marginBottom: 30,
@@ -173,41 +188,59 @@ export default function Profile() {
                 style={{ width: "100%", height: "100%" }}
               ></Image>
             </View>
-            {GameName && TagLine && (
-              <View
-                style={{
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  alignItems: "flex-start",
-                  height: "100%",
-                }}
-              >
-                <Text
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                width: "70%",
+              }}
+            >
+              {GameName && TagLine && (
+                <View
                   style={{
-                    color: Colors.text.highlighted,
-                    fontSize: 24,
-                    fontFamily: "Rubik500",
-                    textAlign: "center",
-                    padding: 0,
-                    marginBlock: -5,
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "flex-start",
+                    height: "100%",
                   }}
                 >
-                  {GameName}
-                </Text>
-                <Text
+                  <Text
+                    style={{
+                      color: Colors.text.highlighted,
+                      fontSize: 24,
+                      fontFamily: "Rubik500",
+                      textAlign: "center",
+                      padding: 0,
+                      marginBlock: -5,
+                    }}
+                  >
+                    {GameName}
+                  </Text>
+                  <Text
+                    style={{
+                      color: Colors.text.active,
+                      fontSize: 20,
+                      fontFamily: "Rubik500",
+                      textAlign: "center",
+                      padding: 0,
+                      marginBlock: -5,
+                    }}
+                  >
+                    #{TagLine}
+                  </Text>
+                </View>
+              )}
+
+              {PlayerMMR && (
+                <Image
                   style={{
-                    color: Colors.text.active,
-                    fontSize: 20,
-                    fontFamily: "Rubik500",
-                    textAlign: "center",
-                    padding: 0,
-                    marginBlock: -5,
+                    aspectRatio: 1 / 1,
+                    height: "90%",
                   }}
-                >
-                  #{TagLine}
-                </Text>
-              </View>
-            )}
+                  source={{ uri: PlayerMMR.Rank.largeIcon }}
+                ></Image>
+              )}
+            </View>
           </View>
           <ScrollView style={{ width: "100%" }}>
             <View
@@ -228,7 +261,7 @@ export default function Profile() {
                   borderWidth: 1,
                   borderColor: Colors.accent.red,
                   borderRadius: 2,
-                  padding: 6,
+                  padding: 8,
                   width: "100%",
                 }}
               >
@@ -266,7 +299,7 @@ export default function Profile() {
                   borderWidth: 1,
                   borderColor: Colors.accent.color,
                   borderRadius: 2,
-                  padding: 6,
+                  padding: 8,
                   width: "100%",
                 }}
               >
@@ -285,7 +318,7 @@ export default function Profile() {
                       fontFamily: "Rubik500",
                     }}
                   >
-                    Match History
+                    Career
                   </Text>
                   <TabBarIcon
                     name="time"

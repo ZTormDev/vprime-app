@@ -33,6 +33,9 @@ import {
   bundles,
   PlayerLoadout,
   Shard,
+  getMaps,
+  getAgents,
+  getRankTiers,
 } from "./API/valorant-api";
 import {
   usePushNotifications,
@@ -134,8 +137,10 @@ export default function Index() {
       await fetchSkinsWishList();
       await getEntitlementToken(); // Make sure we await the response here
       await GetPlayerLoadout();
-      await getMatchHistory();
       await getPlayerCard();
+      await getMaps();
+      await getAgents();
+      await getRankTiers();
       await getGameSkins();
       await getBundles();
 

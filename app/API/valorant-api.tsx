@@ -26,6 +26,12 @@ export let Shard: any = null;
 export let GameName: any = null;
 export let TagLine: any = null;
 
+export let Maps: any = null;
+export let Agents: any = null;
+export let RankTiers: any = null;
+
+export let PlayerMMR: any = null;
+
 export const extraHeaders = {
   "X-Riot-ClientVersion": "43.0.1.4195386.4190634",
   "X-Riot-ClientPlatform": btoa(
@@ -37,6 +43,24 @@ export const extraHeaders = {
     })
   ),
 };
+
+export async function getRankTiers() {
+  RankTiers = null;
+
+  const url = `https://valorant-api.com/v1/competitivetiers`;
+
+  try {
+    await axios({
+      url: url,
+      method: "GET",
+    }).then((response) => {
+      RankTiers = response.data.data;
+      return RankTiers;
+    });
+  } catch (error) {
+    console.error("Error consiguiendo los rank tiers: " + error);
+  }
+}
 
 export const matchDetails = async (
   shard: any,
@@ -63,12 +87,69 @@ export const matchDetails = async (
     });
 };
 
+export async function getMaps() {
+  Maps = null;
+  await axios({
+    url: `https://valorant-api.com/v1/maps`,
+    method: "GET",
+  }).then((response) => {
+    Maps = response.data.data;
+    return Maps;
+  });
+}
+
+export async function getAgents() {
+  Agents = null;
+  await axios({
+    url: `https://valorant-api.com/v1/agents`,
+    method: "GET",
+  }).then((response) => {
+    Agents = response.data.data;
+    return Agents;
+  });
+}
+
+export async function getPlayerMMR() {
+  PlayerMMR = null;
+
+  const url = `https://pd.${Shard}.a.pvp.net/mmr/v1/players/${PlayerUUID}`;
+  const headers = {
+    "X-Riot-ClientPlatform": extraHeaders["X-Riot-ClientPlatform"],
+    "X-Riot-ClientVersion": extraHeaders["X-Riot-ClientVersion"],
+    "X-Riot-Entitlements-JWT": EntitlementsToken,
+    Authorization: `Bearer ${AccessToken}`,
+  };
+
+  try {
+    const response = await axios.get(url, { headers });
+    const playerMmr = response.data;
+
+    if (playerMmr) {
+      PlayerMMR = playerMmr;
+
+      const playerRank = RankTiers[RankTiers.length - 1].tiers.find(
+        (rank: any) =>
+          rank.tier === playerMmr.LatestCompetitiveUpdate.TierBeforeUpdate
+      );
+      if (playerRank) {
+        PlayerMMR.Rank = playerRank;
+      }
+    }
+  } catch (error) {
+    console.error("ERROR AL CONSEGUIR PLAYER MMR: " + error);
+  }
+}
+
+export function eraseMathHistory() {
+  MatchHistoryData = null;
+}
+
 export async function getMatchHistory() {
   MatchHistoryData = null;
   const startIndex = "0";
-  const endIndex = "10";
+  const endIndex = "15";
 
-  const url = `https://pd.${Shard}.a.pvp.net/match-history/v1/history/${PlayerUUID}?startIndex=${startIndex}&endIndex=${endIndex}`;
+  const url = `https://pd.${Shard}.a.pvp.net/mmr/v1/players/${PlayerUUID}/competitiveupdates?startIndex=${startIndex}&endIndex=${endIndex}`;
 
   const headers = {
     "X-Riot-ClientPlatform": extraHeaders["X-Riot-ClientPlatform"],
@@ -77,14 +158,95 @@ export async function getMatchHistory() {
     Authorization: `Bearer ${AccessToken}`,
   };
 
-  await axios
-    .get(url, { headers })
-    .then((response) => {
-      MatchHistoryData = response.data;
-    })
-    .catch((error) => {
-      console.error("ERROR AL CONSEGUIR PLAYER MATCH HISTORY: " + error);
-    });
+  try {
+    const response = await axios.get(url, { headers });
+    MatchHistoryData = response.data;
+
+    if (MatchHistoryData && MatchHistoryData.Matches) {
+      // Agregar detalles para cada partida
+      await Promise.all(
+        MatchHistoryData.Matches.map(async (match: any, index: any) => {
+          const matchDetailsUrl = `https://pd.${Shard}.a.pvp.net/match-details/v1/matches/${match.MatchID}`;
+          try {
+            const matchDetailsResponse = await axios.get(matchDetailsUrl, {
+              headers,
+            });
+            MatchHistoryData.Matches[index].Details = matchDetailsResponse.data;
+
+            // BUSCAR EL MAPA
+            const map = Maps.find(
+              (map: any) =>
+                map.mapUrl === matchDetailsResponse.data.matchInfo.mapId
+            );
+
+            if (map) {
+              MatchHistoryData.Matches[index].Details.MapDetails = map;
+            }
+
+            // Buscar el jugador cuyo `subject` coincida con el `playerUUID`
+            const player = matchDetailsResponse.data.players.find(
+              (p: any) => p.subject === PlayerUUID
+            );
+
+            if (player) {
+              const playerAgent = Agents.find(
+                (agent: any) => agent.uuid === player.characterId
+              );
+
+              if (playerAgent) {
+                MatchHistoryData.Matches[index].Details.PlayerAgent =
+                  playerAgent;
+              }
+
+              // Encontrar el equipo correspondiente al jugador
+              const playerTeam = match.Details.teams.find(
+                (t: any) => t.teamId === player.teamId
+              );
+
+              // Set EnemyTeamRoundsWon to the rounds won by the opposing team
+              const enemyTeam = matchDetailsResponse.data.teams.find(
+                (t: any) => t.teamId !== player.teamId
+              );
+
+              if (player && playerTeam && enemyTeam) {
+                MatchHistoryData.Matches[index].Details.Player = player;
+                MatchHistoryData.Matches[index].Details.PlayerTeamRoundsWon =
+                  playerTeam.roundsWon;
+                MatchHistoryData.Matches[index].Details.EnemyTeamRoundsWon =
+                  enemyTeam.roundsWon;
+                MatchHistoryData.Matches[index].Details.playerTeam =
+                  playerTeam.teamId;
+
+                const playerRank = RankTiers[RankTiers.length - 1].tiers.find(
+                  (rank: any) => rank.tier === match.TierAfterUpdate
+                );
+                if (playerRank) {
+                  MatchHistoryData.Matches[index].Details.Player.Rank =
+                    playerRank;
+                }
+
+                // Assign the result (Victory, Defeat, or Draw) based on rounds won
+                if (playerTeam.roundsWon > enemyTeam.roundsWon) {
+                  MatchHistoryData.Matches[index].Details.result = "Victory";
+                } else if (playerTeam.roundsWon < enemyTeam.roundsWon) {
+                  MatchHistoryData.Matches[index].Details.result = "Defeat";
+                } else {
+                  MatchHistoryData.Matches[index].Details.result = "Draw";
+                }
+              }
+            }
+          } catch (matchError) {
+            console.error(
+              `Error al obtener detalles para la partida ${match.MatchID}: `,
+              matchError
+            );
+          }
+        })
+      );
+    }
+  } catch (error) {
+    console.error("ERROR AL CONSEGUIR PLAYER MATCH HISTORY: " + error);
+  }
 }
 
 export async function getPlayerCard() {
