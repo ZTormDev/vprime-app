@@ -20,7 +20,7 @@ export const Colors = {
   accent: {
     red: '#FF4654',
     darkRed: '#ba3a46',
-    darkRed2: 'rgba(156,49,58,1)',
+    darkRed2: 'rgb(133, 41, 48)',
     ultraDarkRed: '#5f1920',
     color: '#F8BE30',
     darkColor: '#a37d20',

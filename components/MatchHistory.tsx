@@ -18,6 +18,7 @@ import {
   PlayerMMR,
 } from "@/app/API/valorant-api";
 import { LinearGradient } from "expo-linear-gradient";
+import ProgressBar from "./ProgressBar";
 
 export const MatchHistory = ({ setShowMatchHistory }) => {
   const [isLoading, setIsLoading] = useState(true); // Estado para controlar si está cargando
@@ -82,13 +83,12 @@ export const MatchHistory = ({ setShowMatchHistory }) => {
         top: 0,
         left: 0,
         margin: 10,
-        paddingInline: 8,
-        paddingBlock: 20,
+        padding: 10,
         justifyContent: "space-between",
         alignItems: "center",
         backgroundColor: Colors.dark.background,
         borderWidth: 1,
-        borderRadius: 2,
+        borderRadius: 1,
         borderColor: Colors.dark.cardPress,
       }}
     >
@@ -97,7 +97,6 @@ export const MatchHistory = ({ setShowMatchHistory }) => {
           width: "100%",
           justifyContent: "center",
           alignItems: "center",
-          padding: 10,
           gap: 10,
         }}
       >
@@ -110,11 +109,18 @@ export const MatchHistory = ({ setShowMatchHistory }) => {
         >
           CAREER
         </Text>
-        <View style={{ justifyContent: "center", alignItems: "center" }}>
+        <View
+          style={{
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 5,
+            width: "100%",
+          }}
+        >
           <View
             style={{
               aspectRatio: 1 / 1,
-              width: 80,
+              width: 70,
               justifyContent: "center",
               alignItems: "center",
             }}
@@ -127,12 +133,13 @@ export const MatchHistory = ({ setShowMatchHistory }) => {
           <Text
             style={{
               color: hexToRgba(PlayerMMR.Rank.color),
-              fontSize: 22,
-              fontFamily: "Rubik700",
+              fontSize: 20,
+              fontFamily: "Rubik600",
             }}
           >
             {PlayerMMR.Rank.tierName}
           </Text>
+          <ProgressBar value={10} maxValue={100} />
         </View>
       </View>
       {isLoading ? (
@@ -142,7 +149,7 @@ export const MatchHistory = ({ setShowMatchHistory }) => {
         MatchHistoryData &&
         MatchHistoryData.Matches && (
           <ScrollView
-            contentContainerStyle={{ marginHorizontal: 15 }}
+            contentContainerStyle={{ marginHorizontal: 6 }}
             persistentScrollbar={true}
           >
             {MatchHistoryData.Matches.map(
@@ -251,11 +258,11 @@ export const MatchHistory = ({ setShowMatchHistory }) => {
                               height: "100%",
                               justifyContent: "center",
                               alignItems: "center",
-                              marginLeft: -10,
+                              marginLeft: -15,
                             }}
                           >
                             <Image
-                              style={{ aspectRatio: 1 / 1, height: "55%" }}
+                              style={{ aspectRatio: 1 / 1, width: 40 }}
                               source={{
                                 uri: match.Details.Player.Rank.largeIcon,
                               }}
@@ -365,7 +372,7 @@ export const MatchHistory = ({ setShowMatchHistory }) => {
           backgroundColor: Colors.accent.red,
           marginTop: 10,
           padding: 8,
-          width: "92%",
+          width: "100%",
           borderRadius: 5,
         }}
         activeOpacity={0.7}
@@ -381,7 +388,6 @@ export const MatchHistory = ({ setShowMatchHistory }) => {
           Close
         </Text>
       </TouchableOpacity>
-
       <Modal animationType="fade" transparent={true} visible={detailsVisible}>
         <View
           style={{

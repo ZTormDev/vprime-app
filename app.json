@@ -2,7 +2,7 @@
   "expo": {
     "name": "VPrime",
     "slug": "vprime",
-    "version": "1.7",
+    "version": "1.9.2",
     "newArchEnabled": true,
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -24,7 +24,9 @@
       },
       "package": "com.zetadev.vprime",
       "googleServicesFile": "./google-services.json",
-      "permissions": ["INTERNET"]
+      "permissions": [
+        "INTERNET"
+      ]
     },
     "web": {
       "bundler": "metro",
