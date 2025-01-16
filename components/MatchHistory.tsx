@@ -113,33 +113,101 @@ export const MatchHistory = ({ setShowMatchHistory }) => {
           style={{
             justifyContent: "center",
             alignItems: "center",
-            gap: 5,
             width: "100%",
+            padding: 15,
           }}
         >
-          <View
-            style={{
-              aspectRatio: 1 / 1,
-              width: 70,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Image
-              style={{ width: "100%", height: "100%" }}
-              source={{ uri: PlayerMMR.Rank.largeIcon }}
-            ></Image>
-          </View>
-          <Text
-            style={{
-              color: hexToRgba(PlayerMMR.Rank.color),
-              fontSize: 20,
-              fontFamily: "Rubik600",
-            }}
-          >
-            {PlayerMMR.Rank.tierName}
-          </Text>
-          <ProgressBar value={10} maxValue={100} />
+          {PlayerMMR.Rank.tier >= 24 ? (
+            <View
+              style={{
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                width: "100%",
+              }}
+            >
+              <View
+                style={{
+                  aspectRatio: 1 / 1,
+                  width: 70,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Image
+                  style={{ width: "100%", height: "100%" }}
+                  source={{ uri: PlayerMMR.Rank.largeIcon }}
+                ></Image>
+              </View>
+              <Text
+                style={{
+                  color: hexToRgba(PlayerMMR.Rank.color),
+                  fontSize: 20,
+                  fontFamily: "Rubik600",
+                }}
+              >
+                {PlayerMMR.Rank.tierName} {"#635"}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Rubik400",
+                  fontSize: 14,
+                  color: Colors.dark.text,
+                }}
+              >
+                RANK RATING
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Rubik500",
+                  fontSize: 20,
+                  color: Colors.dark.text,
+                }}
+              >
+                295
+              </Text>
+            </View>
+          ) : (
+            <View
+              style={{
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                width: "100%",
+                gap: 5,
+              }}
+            >
+              <View
+                style={{
+                  aspectRatio: 1 / 1,
+                  width: 70,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Image
+                  style={{ width: "100%", height: "100%" }}
+                  source={{ uri: PlayerMMR.Rank.largeIcon }}
+                ></Image>
+              </View>
+              <Text
+                style={{
+                  color: hexToRgba(PlayerMMR.Rank.color),
+                  fontSize: 20,
+                  fontFamily: "Rubik600",
+                }}
+              >
+                {PlayerMMR.Rank.tierName}
+              </Text>
+              <ProgressBar
+                value={
+                  PlayerMMR.LatestCompetitiveUpdate.RankedRatingBeforeUpdate
+                }
+                maxValue={100}
+                isRankBar={true}
+              />
+            </View>
+          )}
         </View>
       </View>
       {isLoading ? (
@@ -258,7 +326,7 @@ export const MatchHistory = ({ setShowMatchHistory }) => {
                               height: "100%",
                               justifyContent: "center",
                               alignItems: "center",
-                              marginLeft: -15,
+                              marginLeft: -25,
                             }}
                           >
                             <Image
@@ -296,6 +364,7 @@ export const MatchHistory = ({ setShowMatchHistory }) => {
                               flexDirection: "column",
                               justifyContent: "center",
                               alignItems: "center",
+                              marginHorizontal: -10,
                             }}
                           >
                             <Text
@@ -328,34 +397,143 @@ export const MatchHistory = ({ setShowMatchHistory }) => {
                           </View>
                           <View
                             style={{
-                              justifyContent: "flex-start",
                               flexDirection: "column",
+                              justifyContent: "space-between",
                               alignItems: "flex-end",
-                              paddingInline: 5,
+                              padding: 2,
+                              paddingRight: 4,
                             }}
                           >
-                            <Text
+                            <View
                               style={{
-                                color: Colors.text.active,
-                                fontSize: 14,
-                                fontFamily: "Rubik400",
-                                textShadowColor: "rgba(0,0,0,0.5)",
-                                textShadowRadius: 10,
+                                justifyContent: "flex-start",
+                                flexDirection: "column",
+                                alignItems: "flex-end",
                               }}
                             >
-                              {formatDate(match.MatchStartTime)}
-                            </Text>
-                            <Text
+                              <Text
+                                style={{
+                                  color: Colors.text.active,
+                                  fontSize: 12,
+                                  fontFamily: "Rubik400",
+                                  textShadowColor: "rgba(0,0,0,0.5)",
+                                  textShadowRadius: 10,
+                                }}
+                              >
+                                {formatDate(match.MatchStartTime)}
+                              </Text>
+                              <Text
+                                style={{
+                                  color: Colors.dark.text,
+                                  fontSize: 12,
+                                  fontFamily: "Rubik400",
+                                  textShadowColor: "rgba(0,0,0,0.5)",
+                                  textShadowRadius: 10,
+                                  marginBlock: -4,
+                                }}
+                              >
+                                {formatHour(match.MatchStartTime)}
+                              </Text>
+                            </View>
+                            <View
                               style={{
-                                color: Colors.dark.text,
-                                fontSize: 14,
-                                fontFamily: "Rubik400",
-                                textShadowColor: "rgba(0,0,0,0.5)",
-                                textShadowRadius: 10,
+                                justifyContent: "center",
+                                alignItems: "flex-end",
                               }}
                             >
-                              {formatHour(match.MatchStartTime)}
-                            </Text>
+                              <View
+                                style={{
+                                  flexDirection: "row",
+                                  justifyContent: "center",
+                                  alignItems: "center",
+                                  marginBlock: -3,
+                                }}
+                              >
+                                <Text
+                                  style={{
+                                    color: Colors.dark.text,
+                                    fontSize: 15,
+                                    fontFamily: "Rubik500",
+                                    marginRight: 10,
+                                  }}
+                                >
+                                  KDA
+                                </Text>
+                                <Text
+                                  style={{
+                                    color: Colors.dark.text,
+                                    fontSize: 15,
+                                    fontFamily: "Rubik500",
+                                  }}
+                                >
+                                  {match.Details.Player.stats.kills}
+                                </Text>
+                                <Text
+                                  style={{
+                                    color: Colors.dark.text,
+                                    fontSize: 14,
+                                    fontFamily: "Rubik400",
+                                  }}
+                                >
+                                  /
+                                </Text>
+                                <Text
+                                  style={{
+                                    color: Colors.dark.text,
+                                    fontSize: 15,
+                                    fontFamily: "Rubik500",
+                                  }}
+                                >
+                                  {match.Details.Player.stats.assists}
+                                </Text>
+                                <Text
+                                  style={{
+                                    color: Colors.dark.text,
+                                    fontSize: 14,
+                                    fontFamily: "Rubik400",
+                                  }}
+                                >
+                                  /
+                                </Text>
+                                <Text
+                                  style={{
+                                    color: Colors.dark.text,
+                                    fontSize: 15,
+                                    fontFamily: "Rubik500",
+                                  }}
+                                >
+                                  {match.Details.Player.stats.deaths}
+                                </Text>
+                              </View>
+                              <View
+                                style={{
+                                  justifyContent: "center",
+                                  alignItems: "center",
+                                  flexDirection: "row",
+                                  marginBlock: -3,
+                                }}
+                              >
+                                <Text
+                                  style={{
+                                    color: Colors.dark.text,
+                                    fontSize: 12,
+                                    fontFamily: "Rubik400",
+                                    marginRight: 10,
+                                  }}
+                                >
+                                  SCORE
+                                </Text>
+                                <Text
+                                  style={{
+                                    color: Colors.dark.text,
+                                    fontSize: 12,
+                                    fontFamily: "Rubik400",
+                                  }}
+                                >
+                                  {match.Details.Player.stats.score}
+                                </Text>
+                              </View>
+                            </View>
                           </View>
                         </View>
                       </View>

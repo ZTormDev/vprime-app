@@ -36,6 +36,9 @@ import {
   getMaps,
   getAgents,
   getRankTiers,
+  Maps,
+  Agents,
+  fetchStoreData,
 } from "./API/valorant-api";
 import {
   usePushNotifications,
@@ -133,19 +136,19 @@ export default function Index() {
       SetGameName(idTokenDecoded.acct.game_name);
 
       // Fetch data only after tokens are set
+      await getEntitlementToken();
+      await getGameSkins();
+      await getBundles();
       await getContentTiers();
       await fetchSkinsWishList();
-      await getEntitlementToken(); // Make sure we await the response here
       await GetPlayerLoadout();
       await getPlayerCard();
       await getMaps();
       await getAgents();
       await getRankTiers();
-      await getGameSkins();
-      await getBundles();
 
       // Once everything is fetched, check tokens
-      checkTokens();
+      await checkTokens();
     }
   };
 
@@ -166,7 +169,7 @@ export default function Index() {
       });
   }
 
-  function checkTokens() {
+  async function checkTokens() {
     console.warn("CHECKING TOKENS");
 
     if (
@@ -175,8 +178,11 @@ export default function Index() {
       PlayerUUID &&
       Shard &&
       skins &&
-      bundles
+      bundles &&
+      Maps &&
+      Agents
     ) {
+      await fetchStoreData();
       setLogged(true);
       console.log("Estás logeado, tienes todos los tokens");
     } else {

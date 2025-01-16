@@ -3,6 +3,7 @@ import axios from "axios";
 import jwtDecode from "jwt-decode";
 import { useState } from "react";
 
+export let storeFrontData: any = {};
 export let skins: any = [];
 export let bundles: any = [];
 export let featuredBundle: any = {};
@@ -42,6 +43,29 @@ export const extraHeaders = {
       platformChipset: "Unknown",
     })
   ),
+};
+
+export const fetchStoreData = async () => {
+  try {
+    const response = await axios.request({
+      url: `https://pd.${Shard}.a.pvp.net/store/v3/storefront/${PlayerUUID}`,
+      method: "POST",
+      headers: {
+        ...extraHeaders,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${AccessToken}`,
+        "X-Riot-Entitlements-JWT": EntitlementsToken,
+      },
+      data: {},
+    });
+
+    storeFrontData = response.data;
+    await parseShop(response.data);
+
+    console.log(JSON.stringify(storeFrontData, null, 1));
+  } catch (error) {
+    console.error("error fetching store data: " + error);
+  }
 };
 
 export async function getRankTiers() {
@@ -509,21 +533,25 @@ export async function parseShop(shop: any) {
 }
 
 function parseNightMarket(shop: any) {
-  nightMarket = null;
+  let nightMarket = {
+    Offers: [],
+    TimeRemaining: 0,
+  };
 
-  if (shop.BonusStore != null && shop.BonusStore != undefined) {
-    let nightMarketOffers: any[] = shop.BonusStore.BonusStoreOffers;
+  if (shop.BonusStore && shop.BonusStore.BonusStoreOffers && skins) {
+    let nightMarketOffers = shop.BonusStore.BonusStoreOffers;
 
     for (let i = 0; i < nightMarketOffers.length; i++) {
+      let offer = nightMarketOffers[i].Offer;
+
       // Busca el skin en la lista de skins
       let skin: any = skins.find(
-        (skin: any) =>
-          skin.levels[0].uuid === nightMarketOffers[i].Offer.OfferID
+        (skin: any) => skin.levels[0].uuid === offer.OfferID
       );
 
       if (skin) {
         let costValues = Object.values(nightMarketOffers[i].DiscountCosts);
-        let originalCostValues = Object.values(nightMarketOffers[i].Offer.Cost);
+        let originalCostValues = Object.values(offer.Cost);
 
         if (originalCostValues.length > 0) {
           let originalCostValue: any = originalCostValues[0];
@@ -533,7 +561,7 @@ function parseNightMarket(shop: any) {
           skin.OriginalCost = formatNumberWithCommas(originalCostValue);
         }
 
-        let skinTier: any = contentTiers.find(
+        let skinTier = contentTiers.find(
           (tier: any) => tier.uuid === skin.contentTierUuid
         );
 
@@ -541,17 +569,19 @@ function parseNightMarket(shop: any) {
           skin.TierColor = getTierColor(skinTier);
           skin.TierName = skinTier.displayName;
         }
-
-        // Agregar cada skin individualmente a nightMarket.Offers
         nightMarket.Offers.push(skin);
       }
     }
 
+    // Asigna el tiempo restante
     nightMarket.TimeRemaining =
       shop.BonusStore.BonusStoreRemainingDurationInSeconds;
+
+    console.log("SE ENCONTRO TIENDA NOCTURNA!");
+    return nightMarket;
   } else {
     console.log("NO SE ENCONTRO TIENDA NOCTURNA!");
-    nightMarket = null;
+    return null;
   }
 }
 

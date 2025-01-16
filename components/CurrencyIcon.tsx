@@ -3,7 +3,7 @@ import { Image, StyleSheet, ImageStyle } from "react-native";
 import { Colors } from "react-native/Libraries/NewAppScreen";
 
 interface Props {
-  icon: "vp" | "rad";
+  icon: "vp" | "rad" | "kdc"; // Agregamos "kdc" como posible valor
   size: number;
   style?: ImageStyle; // Añadimos una prop opcional para el estilo
 }
@@ -25,7 +25,9 @@ export default function CurrencyIcon(props: Props) {
       source={
         icon === "vp"
           ? require("../assets/images/vp.png")
-          : require("../assets/images/rad.png")
+          : icon === "rad"
+          ? require("../assets/images/rad.png")
+          : require("../assets/images/kdc.png") // Para "kdc"
       }
       {...props}
     />

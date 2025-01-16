@@ -8,21 +8,17 @@ import {
   ActivityIndicator,
 } from "react-native";
 import React from "react";
-import axios from "axios";
 import {
-  extraHeaders,
   featuredBundle,
   getSkin,
   isInWishList,
-  parseShop,
   storeSkins,
   nightMarket,
-  contentTiers,
-  skins,
   AccessToken,
-  Shard,
   PlayerUUID,
   EntitlementsToken,
+  fetchStoreData,
+  storeFrontData,
 } from "../API/valorant-api";
 import { Colors } from "@/constants/Colors";
 import CurrencyIcon from "@/components/CurrencyIcon";
@@ -32,8 +28,6 @@ import { BundlePreview } from "@/components/BundlePreview";
 import { useNavigation } from "@react-navigation/native";
 
 export default function Store() {
-  const [storeData, setStoreData] = useState<any>([]);
-  const [featuredBundleData, setFeaturedBundleData] = useState<any>([]);
   const [OffersTimeRemaining, setOffersTimeRemaining] = useState("");
   const [featuredBundleTimeRemaining, setFeaturedBundleTimeRemaining] =
     useState("");
@@ -55,33 +49,6 @@ export default function Store() {
 
     return unsubscribe;
   }, [navigation]);
-
-  const fetchStoreData = async () => {
-    try {
-      const response = await axios.request({
-        url: `https://pd.${Shard}.a.pvp.net/store/v3/storefront/${PlayerUUID}`,
-        method: "POST",
-        headers: {
-          ...extraHeaders,
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${AccessToken}`,
-          "X-Riot-Entitlements-JWT": EntitlementsToken,
-        },
-        data: {},
-      });
-
-      await parseShop(response.data).then(() => {
-        setStoreData(storeSkins);
-        setFeaturedBundleData(featuredBundle);
-      });
-
-      // console.log(JSON.stringify(featuredBundle, null, 1));
-
-      setDebugStoreData(nightMarket);
-    } catch (error) {
-      console.error("error fetching store data: " + error);
-    }
-  };
 
   const calculateFeaturedBundleTimeRemaining = async (
     initialSeconds: number
@@ -163,8 +130,8 @@ export default function Store() {
 
   // CONSIGUE LOS TIEMPOS RESTANTES DE OFFERS Y FEATURED BUNDLE
   useEffect(() => {
-    if (featuredBundleData.timeRemaining && storeData.OffersTimeRemaining) {
-      if (nightMarket) {
+    if (featuredBundle.timeRemaining && storeSkins.OffersTimeRemaining) {
+      if (nightMarket && nightMarket.Offers.length > 0) {
         const initialSecondsNightMarket = nightMarket.TimeRemaining;
         let remainingSecondsNightMarket = initialSecondsNightMarket;
 
@@ -185,11 +152,11 @@ export default function Store() {
         };
       }
 
-      const initialSecondsBundle = featuredBundleData.timeRemaining;
+      const initialSecondsBundle = featuredBundle.timeRemaining;
       let remainingSecondsBundle = initialSecondsBundle;
 
       // const initialSecondsOffers = storeData.OffersTimeRemaining;
-      const initialSecondsOffers = storeData.OffersTimeRemaining;
+      const initialSecondsOffers = storeSkins.OffersTimeRemaining;
       let remainingSecondsOffers = initialSecondsOffers;
 
       const intervalBundle = setInterval(async () => {
@@ -222,21 +189,7 @@ export default function Store() {
         clearInterval(intervalOffers);
       };
     }
-  }, [featuredBundleData, storeData]);
-
-  useEffect(() => {
-    const getAllData = async () => {
-      try {
-        if (AccessToken && PlayerUUID && EntitlementsToken) {
-          fetchStoreData();
-        }
-      } catch (error) {
-        console.error("Error checking login status", error);
-      }
-    };
-
-    getAllData();
-  }, [AccessToken, PlayerUUID, EntitlementsToken]);
+  }, [featuredBundle, storeSkins]);
 
   const showSkinPanel = async (show: boolean, skinUUID: any) => {
     if (show) {
@@ -269,16 +222,12 @@ export default function Store() {
       >
         {/* <Text style={{ color: "white" }}>{JSON.stringify(Shard, null, 1)}</Text> */}
 
-        {AccessToken &&
-        storeData &&
-        featuredBundleData &&
-        storeSkins &&
-        featuredBundle ? (
+        {AccessToken && storeSkins && featuredBundle ? (
           <ScrollView
             ref={scrollViewRef}
             style={{ width: "100%", marginBottom: 25, marginTop: 15 }}
           >
-            {nightMarket && (
+            {nightMarket && nightMarket.Offers.length > 0 && (
               <View style={{ alignItems: "center", marginBottom: 40 }}>
                 <Text
                   style={{
@@ -507,12 +456,12 @@ export default function Store() {
                   }}
                 />
               </View>
-              {featuredBundleData && featuredBundleData.displayIcon && (
+              {featuredBundle && featuredBundle.displayIcon && (
                 <TouchableHighlight
                   activeOpacity={0.25}
                   underlayColor={Colors.dark.card}
                   onPress={() => {
-                    setSelectedBundle(featuredBundleData);
+                    setSelectedBundle(featuredBundle);
                   }}
                   style={{
                     marginBottom: 20,
@@ -524,7 +473,7 @@ export default function Store() {
                 >
                   <View>
                     <Image
-                      source={{ uri: featuredBundleData.displayIcon }}
+                      source={{ uri: featuredBundle.displayIcon }}
                       style={{
                         position: "absolute",
                         width: "100%",
@@ -597,7 +546,7 @@ export default function Store() {
                               textTransform: "uppercase",
                             }}
                           >
-                            {featuredBundleData.timeRemaining &&
+                            {featuredBundle.timeRemaining &&
                               featuredBundleTimeRemaining}
                           </Text>
                         </View>
@@ -611,7 +560,7 @@ export default function Store() {
                             marginVertical: -10,
                           }}
                         >
-                          {featuredBundleData.displayName}
+                          {featuredBundle.displayName}
                         </Text>
                         <Text
                           style={{
@@ -650,7 +599,7 @@ export default function Store() {
                               textTransform: "uppercase",
                             }}
                           >
-                            {featuredBundleData.bundlePrice}
+                            {featuredBundle.bundlePrice}
                           </Text>
                         </View>
                       </View>
@@ -659,7 +608,7 @@ export default function Store() {
                 </TouchableHighlight>
               )}
             </View>
-            <View style={{ alignItems: "center" }}>
+            <View style={{ alignItems: "center", marginBottom: 50 }}>
               <View
                 style={{
                   overflow: "hidden",
@@ -814,6 +763,80 @@ export default function Store() {
                     </>
                   </TouchableHighlight>
                 ))}
+              </View>
+            </View>
+
+            <View style={{ alignItems: "center" }}>
+              {" "}
+              {/* ACCESSORY STORE */}
+              <View
+                style={{
+                  overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "90%",
+                  marginBottom: 10,
+                }}
+              >
+                <View
+                  style={{
+                    borderColor: Colors.dark.cardPress,
+                    borderBottomWidth: 1.5,
+                    width: "100%",
+                  }}
+                />
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginHorizontal: 10,
+                    gap: 8,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Rubik400",
+                      color: Colors.dark.text,
+                      fontSize: 18,
+                    }}
+                  >
+                    ACCESSORY STORE
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: "Rubik500",
+                      color: "white",
+                      fontSize: 15,
+                    }}
+                  >
+                    {" "}
+                    |{" "}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: "Rubik500",
+                      color: Colors.text.highlighted,
+                      fontSize: 18,
+                    }}
+                  >
+                    {OffersTimeRemaining}
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    borderColor: Colors.dark.cardPress,
+                    borderBottomWidth: 1.5,
+                    width: "100%",
+                  }}
+                />
+              </View>
+              <View style={{ alignItems: "center" }}>
+                <Text style={{ color: "white" }}>
+                  {JSON.stringify(storeFrontData, null, 1)}
+                </Text>
               </View>
             </View>
           </ScrollView>
