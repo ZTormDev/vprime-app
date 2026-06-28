@@ -3,16 +3,10 @@
     "name": "VPrime",
     "slug": "vprime",
     "version": "1.9.2",
-    "newArchEnabled": true,
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#131313"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.zetadev.vprime"
@@ -42,7 +36,18 @@
           "icon": "./assets/images/icon.png",
           "color": "#ff8484"
         }
-      ]
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#131313"
+        }
+      ],
+      "expo-status-bar",
+      "expo-video",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

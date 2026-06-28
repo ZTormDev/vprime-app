@@ -19,13 +19,15 @@ import {
   EntitlementsToken,
   fetchStoreData,
   storeFrontData,
-} from "../API/valorant-api";
+  accessoryStoreOffers,
+} from "../../API/valorant-api";
 import { Colors } from "@/constants/Colors";
 import CurrencyIcon from "@/components/CurrencyIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import { SkinPreview } from "@/components/SkinPreview";
 import { BundlePreview } from "@/components/BundlePreview";
-import { useNavigation } from "@react-navigation/native";
+import { AccessoryPreview } from "@/components/AccesoryPreview";
+import { useNavigation } from "expo-router";
 
 export default function Store() {
   const [OffersTimeRemaining, setOffersTimeRemaining] = useState("");
@@ -34,6 +36,7 @@ export default function Store() {
   const [nightMarketTimeRemaining, setNightMarketTimeRemaining] = useState("");
   const [selectedSkin, setSelectedSkin] = useState<any | null>(null);
   const [selectedBundle, setSelectedBundle] = useState<any | null>(null);
+  const [selectedAccessory, setSelectedAccessory] = useState<any | null>(null);
   const [videoPreview, setVideoPreview] = useState<any>(null);
   const [inWishlist, setInWishlist] = useState<boolean>(false);
   const [debugStoreData, setDebugStoreData] = useState<any>([]);
@@ -329,7 +332,7 @@ export default function Store() {
                         borderRadius: 2,
                       }}
                     >
-                      <>
+                      <View style={{ width: "100%" }}>
                         <LinearGradient
                           colors={["rgba(0,0,0,0.1)", skin.TierColor]}
                           style={{
@@ -403,7 +406,7 @@ export default function Store() {
                             {skin.displayName}
                           </Text>
                         </View>
-                      </>
+                      </View>
                     </TouchableHighlight>
                   ))}
                 </View>
@@ -687,7 +690,7 @@ export default function Store() {
                       borderRadius: 2,
                     }}
                   >
-                    <>
+                    <View style={{ width: "100%" }}>
                       <LinearGradient
                         colors={["rgba(0,0,0,0.1)", skin.TierColor]}
                         style={{
@@ -760,14 +763,13 @@ export default function Store() {
                           {skin.displayName}
                         </Text>
                       </View>
-                    </>
+                    </View>
                   </TouchableHighlight>
                 ))}
               </View>
             </View>
 
             <View style={{ alignItems: "center" }}>
-              {" "}
               {/* ACCESSORY STORE */}
               <View
                 style={{
@@ -833,10 +835,118 @@ export default function Store() {
                   }}
                 />
               </View>
-              <View style={{ alignItems: "center" }}>
-                <Text style={{ color: "white" }}>
-                  {JSON.stringify(storeFrontData, null, 1)}
-                </Text>
+              <View style={{ alignItems: "center", gap: 20, width: "100%", marginTop: 10 }}>
+                {accessoryStoreOffers && accessoryStoreOffers.map((accessory: any) => (
+                  <TouchableHighlight
+                    key={accessory.uuid}
+                    activeOpacity={0.25}
+                    underlayColor={Colors.dark.cardPress}
+                    onPress={() => setSelectedAccessory(accessory)}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: Colors.dark.cardPress,
+                      width: "90%",
+                      borderRadius: 2,
+                    }}
+                  >
+                    <View style={{ width: "100%" }}>
+                      <LinearGradient
+                        colors={["rgba(0,0,0,0.15)", Colors.dark.cardPress]}
+                        style={{
+                          position: "absolute",
+                          width: "100%",
+                          height: "100%",
+                        }}
+                      />
+                      <View
+                        style={{
+                          alignItems: "flex-start",
+                          justifyContent: "space-between",
+                          display: "flex",
+                          flexDirection: "column",
+                          padding: 12,
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: "100%",
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontFamily: "Rubik400",
+                              color: Colors.dark.text,
+                              fontSize: 14,
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {accessory.itemType}
+                          </Text>
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 5,
+                            }}
+                          >
+                            <CurrencyIcon icon="kdc" size={20} />
+                            <Text
+                              style={{
+                                fontFamily: "Rubik400",
+                                color: Colors.dark.text,
+                                fontSize: 18,
+                              }}
+                            >
+                              {accessory.Cost}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {accessory.displayIcon ? (
+                          <View
+                            style={{
+                              width: "100%",
+                              marginVertical: 10,
+                              alignItems: "center",
+                            }}
+                          >
+                            <Image
+                              source={{ uri: accessory.displayIcon }}
+                              style={{
+                                width: "65%",
+                                resizeMode: "contain",
+                                aspectRatio: accessory.itemType === "Player Card" ? 3 / 4 : 1,
+                                height: accessory.itemType === "Player Card" ? 180 : 100,
+                              }}
+                            />
+                          </View>
+                        ) : (
+                          <View style={{ width: "100%", height: 80, justifyContent: "center", alignItems: "center" }}>
+                            <Text style={{ fontFamily: "Rubik700", color: Colors.text.highlighted, fontSize: 18, fontStyle: "italic", textAlign: "center" }}>
+                              "{accessory.displayName}"
+                            </Text>
+                          </View>
+                        )}
+
+                        <Text
+                          style={{
+                            fontFamily: "Rubik500",
+                            color: "white",
+                            fontSize: 18,
+                            textAlign: "left",
+                            textTransform: "uppercase",
+                            marginTop: 5,
+                          }}
+                        >
+                          {accessory.displayName}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableHighlight>
+                ))}
               </View>
             </View>
           </ScrollView>
@@ -870,6 +980,16 @@ export default function Store() {
         <BundlePreview
           bundleData={selectedBundle}
           setSelectedBundle={setSelectedBundle}
+        />
+      )}
+      {selectedAccessory && (
+        <AccessoryPreview
+          selectedAccessory={selectedAccessory}
+          imagePreview={selectedAccessory.displayIcon}
+          inWishlist={false}
+          handleWishlistPress={() => {}}
+          setSelectedAccessory={setSelectedAccessory}
+          price={selectedAccessory.Cost}
         />
       )}
     </View>

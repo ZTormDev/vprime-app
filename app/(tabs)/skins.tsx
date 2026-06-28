@@ -12,9 +12,9 @@ import {
 import React, { useState, useEffect, useRef } from "react";
 import { Text } from "react-native";
 import { Colors } from "@/constants/Colors";
-import { addSkinToWishList, isInWishList, skins } from "../API/valorant-api";
+import { addSkinToWishList, isInWishList, skins } from "../../API/valorant-api";
 import { ResizeMode, Video } from "expo-av";
-import { useNavigation } from "@react-navigation/native"; // Para obtener el objeto de navegación
+import { useNavigation } from "expo-router"; // Para obtener el objeto de navegación
 import { TabBarIcon } from "@/components/navigation/TabBarIcon";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { SkinPreview } from "@/components/SkinPreview";

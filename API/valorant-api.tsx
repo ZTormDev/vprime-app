@@ -13,6 +13,7 @@ export let nightMarket: any = {
 };
 export let storeSkins: any = [];
 export let wishListSkins: any = [];
+export let accessoryStoreOffers: any = [];
 export let contentTiers: any = {};
 export let PlayerLoadout: any = {};
 export let PlayerCard: any = {};
@@ -62,7 +63,7 @@ export const fetchStoreData = async () => {
     storeFrontData = response.data;
     await parseShop(response.data);
 
-    console.log(JSON.stringify(storeFrontData, null, 1));
+    // console.log(JSON.stringify(storeFrontData, null, 1));
   } catch (error) {
     console.error("error fetching store data: " + error);
   }
@@ -148,19 +149,78 @@ export async function getPlayerMMR() {
     const response = await axios.get(url, { headers });
     const playerMmr = response.data;
 
-    if (playerMmr) {
+    if (playerMmr && playerMmr.LatestCompetitiveUpdate) {
       PlayerMMR = playerMmr;
 
-      const playerRank = RankTiers[RankTiers.length - 1].tiers.find(
+      const playerRank = RankTiers?.[RankTiers.length - 1]?.tiers?.find(
         (rank: any) =>
           rank.tier === playerMmr.LatestCompetitiveUpdate.TierBeforeUpdate
       );
       if (playerRank) {
         PlayerMMR.Rank = playerRank;
+      } else {
+        PlayerMMR.Rank = RankTiers?.[RankTiers.length - 1]?.tiers?.[0] || {
+          tier: 0,
+          tierName: "Unranked",
+          largeIcon: "",
+          color: "ffffff"
+        };
       }
+    } else {
+      throw new Error("No competitive update found");
     }
-  } catch (error) {
-    console.error("ERROR AL CONSEGUIR PLAYER MMR: " + error);
+  } catch (error: any) {
+    if (error.response?.status === 404 || error.message === "No competitive update found") {
+      console.log("Player MMR returned 404. Attempting to fetch rank from competitive updates fallback...");
+      try {
+        const compUrl = `https://pd.${Shard}.a.pvp.net/mmr/v1/players/${PlayerUUID}/competitiveupdates?startIndex=0&endIndex=1`;
+        const compResponse = await axios.get(compUrl, { headers });
+        const compData = compResponse.data;
+
+        if (compData && compData.Matches && compData.Matches.length > 0) {
+          const latestMatch = compData.Matches[0];
+          const tierId = latestMatch.TierAfterUpdate;
+
+          const playerRank = RankTiers?.[RankTiers.length - 1]?.tiers?.find(
+            (rank: any) => rank.tier === tierId
+          ) || RankTiers?.[RankTiers.length - 1]?.tiers?.[0] || {
+            tier: 0,
+            tierName: "Unranked",
+            largeIcon: "",
+            color: "ffffff"
+          };
+
+          PlayerMMR = {
+            LatestCompetitiveUpdate: {
+              RankedRatingBeforeUpdate: latestMatch.RankedRatingAfterUpdate,
+              TierBeforeUpdate: tierId
+            },
+            Rank: playerRank
+          };
+          console.log(`Successfully recovered player rank from competitive updates fallback: ${playerRank.tierName}`);
+          return;
+        }
+      } catch (fallbackError) {
+        console.error("Fallback to competitive updates failed:", fallbackError);
+      }
+    } else {
+      console.error("ERROR AL CONSEGUIR PLAYER MMR: " + error);
+    }
+
+    // Set default Unranked MMR to avoid app crashes
+    const unrankedRank = RankTiers?.[RankTiers.length - 1]?.tiers?.[0] || {
+      tier: 0,
+      tierName: "Unranked",
+      largeIcon: "",
+      color: "ffffff"
+    };
+    PlayerMMR = {
+      LatestCompetitiveUpdate: {
+        RankedRatingBeforeUpdate: 0,
+        TierBeforeUpdate: 0
+      },
+      Rank: unrankedRank
+    };
   }
 }
 
@@ -171,7 +231,7 @@ export function eraseMathHistory() {
 export async function getMatchHistory() {
   MatchHistoryData = null;
   const startIndex = "0";
-  const endIndex = "15";
+  const endIndex = "6";
 
   const url = `https://pd.${Shard}.a.pvp.net/mmr/v1/players/${PlayerUUID}/competitiveupdates?startIndex=${startIndex}&endIndex=${endIndex}`;
 
@@ -275,6 +335,11 @@ export async function getMatchHistory() {
 
 export async function getPlayerCard() {
   PlayerCard = null;
+
+  if (!PlayerLoadout || !PlayerLoadout.Identity) {
+    console.warn("Cannot fetch player card: PlayerLoadout or Identity is null.");
+    return;
+  }
 
   const url = `https://valorant-api.com/v1/playercards/${PlayerLoadout.Identity.PlayerCardID}`;
   await axios
@@ -382,7 +447,7 @@ export async function loadVersion() {
 
     extraHeaders["X-Riot-ClientVersion"] = res.data.data.riotClientVersion;
   } catch (e) {
-    console.log(e);
+    console.warn(e);
   }
 }
 
@@ -530,6 +595,7 @@ export async function parseShop(shop: any) {
 
   parseFeaturedBundle(shop);
   parseNightMarket(shop);
+  await parseAccessoryStore(shop);
 }
 
 function parseNightMarket(shop: any) {
@@ -659,3 +725,127 @@ const getTierColor = (skinTier: any) => {
       return "#FAD663";
   }
 };
+
+export async function parseAccessoryStore(shop: any) {
+  accessoryStoreOffers = [];
+  if (!shop.AccessoryStore || !shop.AccessoryStore.AccessoryStoreOffers) return;
+
+  const offers = shop.AccessoryStore.AccessoryStoreOffers;
+
+  try {
+    const [spraysRes, buddiesRes, cardsRes, titlesRes] = await Promise.all([
+      axios.get("https://valorant-api.com/v1/sprays"),
+      axios.get("https://valorant-api.com/v1/buddies"),
+      axios.get("https://valorant-api.com/v1/playercards"),
+      axios.get("https://valorant-api.com/v1/playertitles")
+    ]);
+
+    const sprays = spraysRes.data.data;
+    const buddies = buddiesRes.data.data;
+    const cards = cardsRes.data.data;
+    const titles = titlesRes.data.data;
+
+    for (let i = 0; i < offers.length; i++) {
+      const offer = offers[i].Offer;
+      if (!offer.Rewards || offer.Rewards.length === 0) continue;
+
+      const reward = offer.Rewards[0];
+      const itemId = reward.ItemID;
+      const itemTypeId = reward.ItemTypeID;
+
+      let foundItem: any = null;
+      let itemType = "";
+      let image = "";
+
+      // 1. Buddy (dd3bf334-87f3-40cd-b033-6eb857edafb3)
+      if (itemTypeId === "dd3bf334-87f3-40cd-b033-6eb857edafb3") {
+        const buddy = buddies.find((b: any) => b.levels[0].uuid === itemId || b.uuid === itemId);
+        if (buddy) {
+          foundItem = buddy;
+          itemType = "Buddy";
+          image = buddy.displayIcon;
+        }
+      }
+
+      // 2. Spray (d5f120a8-ff8b-4612-ad03-ab9564619d7f)
+      else if (itemTypeId === "d5f120a8-ff8b-4612-ad03-ab9564619d7f") {
+        const spray = sprays.find((s: any) => s.uuid === itemId);
+        if (spray) {
+          foundItem = spray;
+          itemType = "Spray";
+          image = spray.fullIcon || spray.displayIcon;
+        }
+      }
+
+      // 3. Player Card (3f296c07-64c3-494c-923b-fe692a4fa1bd)
+      else if (itemTypeId === "3f296c07-64c3-494c-923b-fe692a4fa1bd") {
+        const card = cards.find((c: any) => c.uuid === itemId);
+        if (card) {
+          foundItem = card;
+          itemType = "Player Card";
+          image = card.largeArt || card.displayIcon;
+        }
+      }
+
+      // 4. Player Title (de7ea821-1ade-496e-b430-74f83134731a)
+      else if (itemTypeId === "de7ea821-1ade-496e-b430-74f83134731a") {
+        const title = titles.find((t: any) => t.uuid === itemId);
+        if (title) {
+          foundItem = title;
+          itemType = "Player Title";
+          image = "";
+        }
+      }
+
+      // Fallback in case type IDs change or don't match
+      if (!foundItem) {
+        const buddy = buddies.find((b: any) => b.levels[0].uuid === itemId || b.uuid === itemId);
+        if (buddy) {
+          foundItem = buddy;
+          itemType = "Buddy";
+          image = buddy.displayIcon;
+        } else {
+          const spray = sprays.find((s: any) => s.uuid === itemId);
+          if (spray) {
+            foundItem = spray;
+            itemType = "Spray";
+            image = spray.fullIcon || spray.displayIcon;
+          } else {
+            const card = cards.find((c: any) => c.uuid === itemId);
+            if (card) {
+              foundItem = card;
+              itemType = "Player Card";
+              image = card.largeArt || card.displayIcon;
+            } else {
+              const title = titles.find((t: any) => t.uuid === itemId);
+              if (title) {
+                foundItem = title;
+                itemType = "Player Title";
+                image = "";
+              }
+            }
+          }
+        }
+      }
+
+      if (foundItem) {
+        let costValue = 0;
+        const costValues = Object.values(offer.Cost);
+        if (costValues.length > 0) {
+          costValue = costValues[0] as number;
+        }
+
+        accessoryStoreOffers.push({
+          uuid: itemId,
+          displayName: foundItem.displayName,
+          displayIcon: image,
+          Cost: formatNumberWithCommas(costValue),
+          itemType: itemType,
+          originalItem: foundItem
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Error parsing accessory store:", error);
+  }
+}

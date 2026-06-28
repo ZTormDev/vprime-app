@@ -16,7 +16,7 @@ import {
   getMatchHistory,
   MatchHistoryData,
   PlayerMMR,
-} from "@/app/API/valorant-api";
+} from "@/API/valorant-api";
 import { LinearGradient } from "expo-linear-gradient";
 import ProgressBar from "./ProgressBar";
 
@@ -58,7 +58,7 @@ export const MatchHistory = ({ setShowMatchHistory }) => {
   // Función para manejar el toque en un match
   const handleMatchPress = (match: any) => {
     setDetailsVisible(true);
-    console.log(JSON.stringify(match.Details.PlayerAgent, null, 1));
+    // console.log(JSON.stringify(match.Details.PlayerAgent, null, 1));
   };
 
   function hexToRgba(hex: any) {

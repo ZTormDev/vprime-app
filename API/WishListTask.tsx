@@ -22,7 +22,7 @@ export default function wishListTask() {
       messaging()
         .getToken()
         .then((token) => {
-          console.log(token);
+          // console.log(token);
         });
     } else {
       console.log("Permission not granted");

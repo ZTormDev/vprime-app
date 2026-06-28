@@ -1,4 +1,4 @@
-import { addSkinToWishList } from "@/app/API/valorant-api";
+import { addSkinToWishList } from "@/API/valorant-api";
 import React, { useState } from "react";
 import {
   TouchableHighlight,

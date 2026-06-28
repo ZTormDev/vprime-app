@@ -1,5 +1,5 @@
-import { addSkinToWishList } from "@/app/API/valorant-api";
-import React, { useState } from "react";
+import { addSkinToWishList } from "@/API/valorant-api";
+import React, { useState, useEffect } from "react";
 import {
   TouchableHighlight,
   View,
@@ -22,9 +22,12 @@ export const AccessoryPreview = ({
   setSelectedAccessory,
   price,
 }) => {
-  // Add a new state to manage the current video
   const [currentImagePreview, setCurrentImagePreview] = useState(imagePreview);
   const [modalVisible, setModalVisible] = useState(false);
+
+  useEffect(() => {
+    setCurrentImagePreview(imagePreview);
+  }, [imagePreview]);
 
   return (
     <View
@@ -127,13 +130,15 @@ export const AccessoryPreview = ({
         >
           {currentImagePreview ? (
             <Image
+              source={{ uri: currentImagePreview }}
               style={{
                 width: "100%",
-                aspectRatio: 4 / 3,
+                aspectRatio: selectedAccessory.itemType === "Player Card" ? 3 / 4 : 4 / 3,
                 borderRadius: 2,
                 marginVertical: 0,
                 borderWidth: 1,
                 borderColor: Colors.dark.cardPress,
+                resizeMode: "contain",
               }}
             />
           ) : (

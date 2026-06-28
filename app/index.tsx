@@ -1,7 +1,7 @@
 import { ActivityIndicator, Alert, Text, View } from "react-native";
 import { WebView } from "react-native-webview";
 import { jwtDecode, JwtPayload } from "jwt-decode";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Redirect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Colors } from "@/constants/Colors";
@@ -39,11 +39,11 @@ import {
   Maps,
   Agents,
   fetchStoreData,
-} from "./API/valorant-api";
+} from "../API/valorant-api";
 import {
   usePushNotifications,
   setNotificationsEnabled,
-} from "./API/notifications-api";
+} from "../API/notifications-api";
 interface CustomJwtPayload extends JwtPayload {
   acct: {
     game_name: string;
@@ -86,6 +86,8 @@ export default function Index() {
   const [webViewShow, setShowWebView] = useState<boolean>(true);
   const riotAuth =
     "https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid";
+
+  const isProcessingToken = useRef(false);
 
   usePushNotifications();
 
@@ -130,7 +132,7 @@ export default function Index() {
       SetPlayerUUID(playerUUID);
       SetAccessToken(accessToken);
       SetIdToken(idToken);
-      SetAccountShard();
+      await SetAccountShard();
       SetExpiresIn(expiresIn);
       SetTagline(idTokenDecoded.acct.tag_line);
       SetGameName(idTokenDecoded.acct.game_name);
@@ -170,7 +172,7 @@ export default function Index() {
   }
 
   async function checkTokens() {
-    console.warn("CHECKING TOKENS");
+    console.log("CHECKING TOKENS");
 
     if (
       AccessToken &&
@@ -237,6 +239,8 @@ export default function Index() {
                     url.includes("id_token") &&
                     url.includes("expires_in")
                   ) {
+                    if (isProcessingToken.current) return;
+                    isProcessingToken.current = true;
                     setShowWebView(false); // Oculta el WebView
                     extractTokensFromUrl(url); // Extrae los tokens de la URL
                   }

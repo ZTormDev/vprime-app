@@ -1,6 +1,6 @@
 import React from "react";
 import { Image, StyleSheet, ImageStyle } from "react-native";
-import { Colors } from "react-native/Libraries/NewAppScreen";
+import { Colors } from "../constants/Colors";
 
 interface Props {
   icon: "vp" | "rad" | "kdc"; // Agregamos "kdc" como posible valor

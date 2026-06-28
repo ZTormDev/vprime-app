@@ -19,7 +19,7 @@ import {
   PlayerMMR,
   TagLine,
   wishListSkins,
-} from "../API/valorant-api";
+} from "../../API/valorant-api";
 import { Switch } from "react-native-switch";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -27,8 +27,8 @@ import {
   notificationsEnabled,
   pushNotification,
   setNotificationsEnabled,
-} from "../API/notifications-api";
-import { useNavigation } from "@react-navigation/native";
+} from "../../API/notifications-api";
+import { useNavigation } from "expo-router";
 import { SkinPreview } from "@/components/SkinPreview";
 import { MatchHistory } from "@/components/MatchHistory";
 
@@ -74,7 +74,7 @@ export default function Profile() {
     } else {
     }
 
-    console.log(newStatus);
+    // console.log(newStatus);
   };
 
   const handleWishlist = () => {

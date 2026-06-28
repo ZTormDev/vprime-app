@@ -1,8 +1,34 @@
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import Constants from "expo-constants"; // Optional
 import { Platform } from 'react-native';
 import { useState, useEffect, useRef } from "react";
+
+let Notifications: any = null;
+try {
+  Notifications = require('expo-notifications');
+} catch (e) {
+  console.log("expo-notifications failed to load (expected in Expo Go SDK 53+). Push notifications will be disabled in this environment.");
+  Notifications = {
+    scheduleNotificationAsync: async () => {},
+    setNotificationHandler: () => {},
+    getPermissionsAsync: async () => ({ status: 'undetermined' }),
+    requestPermissionsAsync: async () => ({ status: 'undetermined' }),
+    getExpoPushTokenAsync: async () => ({ data: '' }),
+    setNotificationChannelAsync: async () => {},
+    addNotificationReceivedListener: () => ({ remove: () => {} }),
+    addNotificationResponseReceivedListener: () => ({ remove: () => {} }),
+    removeNotificationSubscription: () => {},
+    AndroidImportance: {
+      MAX: 5
+    },
+    AndroidAudioUsage: {
+      ALARM: 4
+    },
+    AndroidAudioContentType: {
+      SONIFICATION: 4
+    }
+  };
+}
 
 export async function pushNotification(title: string, body: any, trigger: any) {
   await Notifications.scheduleNotificationAsync({
@@ -31,8 +57,8 @@ export async function scheduleDailyNotification(title: string, trigger: number, 
 
 
 export interface PushNotificationState {
-  expoPushToken?: Notifications.ExpoPushToken;
-  notification?: Notifications.Notification;
+  expoPushToken?: any;
+  notification?: any;
 }
 
 export const usePushNotifications = (): PushNotificationState => {
@@ -40,16 +66,12 @@ export const usePushNotifications = (): PushNotificationState => {
     handleNotification: async () => ({shouldPlaySound: true,shouldShowAlert: true,shouldSetBadge: true,}),
   });
 
-  const [expoPushToken, setExpoPushToken] = useState<
-    Notifications.ExpoPushToken | undefined
-  >();
+  const [expoPushToken, setExpoPushToken] = useState<any>();
 
-  const [notification, setNotification] = useState<
-    Notifications.Notification | undefined
-  >();
+  const [notification, setNotification] = useState<any>();
 
-  const notificationListener = useRef<Notifications.Subscription>();
-  const responseListener = useRef<Notifications.Subscription>();
+  const notificationListener = useRef<any>();
+  const responseListener = useRef<any>();
 
   async function registerForPushNotificationsAsync() {
     let token;
@@ -86,7 +108,7 @@ export const usePushNotifications = (): PushNotificationState => {
       });
     }
 
-    console.log(token);
+    // console.log(token);
 
     return token;
   }
@@ -104,7 +126,7 @@ export const usePushNotifications = (): PushNotificationState => {
 
     responseListener.current =
       Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log(response);
+        // console.log(response);
       });
 
     return () => {

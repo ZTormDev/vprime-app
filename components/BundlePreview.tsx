@@ -9,7 +9,7 @@ import {
 import { Colors } from "@/constants/Colors";
 import CurrencyIcon from "./CurrencyIcon";
 import { LinearGradient } from "expo-linear-gradient";
-import { getSkin, isInWishList } from "@/app/API/valorant-api";
+import { getSkin, isInWishList } from "@/API/valorant-api";
 import { SkinPreview } from "./SkinPreview";
 
 export const BundlePreview = ({ bundleData, setSelectedBundle }) => {
@@ -140,7 +140,7 @@ export const BundlePreview = ({ bundleData, setSelectedBundle }) => {
                   borderRadius: 2,
                 }}
               >
-                <>
+                <View style={{ width: "100%" }}>
                   <LinearGradient
                     colors={["rgba(0,0,0,0.1)", item.TierColor]}
                     style={{
@@ -212,7 +212,7 @@ export const BundlePreview = ({ bundleData, setSelectedBundle }) => {
                       {item.displayName}
                     </Text>
                   </View>
-                </>
+                </View>
               </TouchableHighlight>
             ))}
           </View>
