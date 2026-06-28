@@ -1,14 +1,14 @@
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import React from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar';
 import { Platform, View, LogBox } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Ignore known deprecation and environment warnings
 LogBox.ignoreLogs([
@@ -18,6 +18,15 @@ LogBox.ignoreLogs([
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 export default function RootLayout() {
   const [loaded] = useFonts({
@@ -29,8 +38,6 @@ export default function RootLayout() {
     Rubik800: require("../assets/fonts/Rubik-ExtraBold.ttf"),
     Rubik900: require("../assets/fonts/Rubik-Black.ttf"),
   });
-
-  const [isLogged, setIsLogged] = useState<boolean | null>(null); // Estado de autenticación
 
   useEffect(() => {
     if (Platform.OS === 'android') {
@@ -47,31 +54,17 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    const checkLoginStatus = async () => {
-      try {
-        const userToken = await AsyncStorage.getItem('accessToken');
-        setIsLogged(userToken !== null); // Si hay token, el usuario está logueado
-      } catch (error) {
-        console.error("Error checking login status", error);
-        setIsLogged(false); // Si hay un error, asumimos que no está logueado
-      }
-    };
-
-    checkLoginStatus();
-  }, []);
-
-  useEffect(() => {
-    if (loaded && isLogged !== null) {
+    if (loaded) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, isLogged]);
+  }, [loaded]);
 
-  if (!loaded || isLogged === null) {
-    return null; // Muestra una pantalla de carga mientras se verifica el estado del login
+  if (!loaded) {
+    return null;
   }
 
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       <View style={{ flex: 1, backgroundColor: 'black' }}>
         <SafeAreaView style={{ flex: 1, backgroundColor: Colors.dark.background }}>
           <Stack screenOptions={{
@@ -84,38 +77,12 @@ export default function RootLayout() {
             navigationBarHidden: false,
             contentStyle: {backgroundColor: Colors.dark.background},
             }}>
-              
-            {isLogged ? (
-              <Stack.Screen 
-                name="(tabs)" 
-                options={{ 
-                  headerShown: false, 
-                  statusBarHidden: false, 
-                  statusBarTranslucent: true, 
-                  statusBarStyle: 'light', 
-                  statusBarColor: 'black', 
-                  navigationBarColor: 'black', 
-                  navigationBarHidden: false,
-                }} 
-              />
-            ) : (
-              <Stack.Screen 
-                name="index" 
-                options={{ 
-                  headerShown: false, 
-                  statusBarHidden: false, 
-                  statusBarTranslucent: true, 
-                  statusBarStyle: 'light', 
-                  statusBarColor: 'black', 
-                  navigationBarColor: 'black', 
-                  navigationBarHidden: false 
-                }} 
-              />
-            )}
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           </Stack>
         </SafeAreaView>
       </View>
       <StatusBar style="light" hidden={false} translucent={true} />
-    </>
+    </QueryClientProvider>
   );
 }

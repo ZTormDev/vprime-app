@@ -1,7 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import jwtDecode from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 import { useState } from "react";
+import { useAuthStore } from "../src/store/useAuthStore";
+import { useShopStore } from "../src/store/useShopStore";
 
 export let storeFrontData: any = {};
 export let skins: any = [];
@@ -62,8 +64,12 @@ export const fetchStoreData = async () => {
 
     storeFrontData = response.data;
     await parseShop(response.data);
-
-    // console.log(JSON.stringify(storeFrontData, null, 1));
+    useShopStore.setState({
+      storeSkins,
+      featuredBundle,
+      nightMarket,
+      accessoryStoreOffers,
+    });
   } catch (error) {
     console.error("error fetching store data: " + error);
   }
@@ -166,6 +172,7 @@ export async function getPlayerMMR() {
           color: "ffffff"
         };
       }
+      useShopStore.setState({ playerMMR: PlayerMMR });
     } else {
       throw new Error("No competitive update found");
     }
@@ -197,6 +204,7 @@ export async function getPlayerMMR() {
             },
             Rank: playerRank
           };
+          useShopStore.setState({ playerMMR: PlayerMMR });
           console.log(`Successfully recovered player rank from competitive updates fallback: ${playerRank.tierName}`);
           return;
         }
@@ -221,6 +229,7 @@ export async function getPlayerMMR() {
       },
       Rank: unrankedRank
     };
+    useShopStore.setState({ playerMMR: PlayerMMR });
   }
 }
 
@@ -380,21 +389,27 @@ export async function GetPlayerLoadout() {
 
 export function SetPlayerUUID(puuid: any) {
   PlayerUUID = puuid;
+  useAuthStore.setState({ playerUUID: puuid });
 }
 export function SetAccessToken(access_token: any) {
   AccessToken = access_token;
+  useAuthStore.setState({ accessToken: access_token });
 }
 export function SetIdToken(id_token: any) {
   IdToken = id_token;
+  useAuthStore.setState({ idToken: id_token });
 }
 export function SetExpiresIn(expires: any) {
   ExpiresIn = expires;
+  useAuthStore.setState({ expiresIn: expires });
 }
 export function SetTagline(tagline: any) {
   TagLine = tagline;
+  useAuthStore.setState({ tagline: tagline });
 }
 export function SetGameName(gamename: any) {
   GameName = gamename;
+  useAuthStore.setState({ gameName: gamename });
 }
 export function SetEntitlementsToken(token: any) {
   EntitlementsToken = token;
@@ -417,18 +432,28 @@ export async function SetAccountShard() {
     const live = res.data.affinities.live;
     switch (live) {
       case "latam":
-        return (Shard = "na");
+        Shard = "na";
+        break;
       case "br":
-        return (Shard = "na");
+        Shard = "na";
+        break;
       case "na":
-        return (Shard = "na");
+        Shard = "na";
+        break;
       case "eu":
-        return (Shard = "eu");
+        Shard = "eu";
+        break;
       case "ap":
-        return (Shard = "ap");
+        Shard = "ap";
+        break;
       case "kr":
-        return (Shard = "kr");
+        Shard = "kr";
+        break;
+      default:
+        Shard = live;
     }
+    useAuthStore.setState({ shard: Shard });
+    return Shard;
   } catch (error: any) {
     console.error(
       "Error fetching shard information:",
@@ -458,6 +483,7 @@ export async function getContentTiers() {
     method: "GET",
   }).then((response) => {
     contentTiers = response.data.data;
+    useShopStore.setState({ contentTiers });
   });
 }
 
@@ -475,6 +501,7 @@ export async function getGameSkins() {
           !skin.displayName.toLowerCase().includes("random")
       )
       .sort((a: any, b: any) => a.displayName.localeCompare(b.displayName)); // Ordenar las skins alfabéticamente
+    useShopStore.setState({ skins });
     return skins;
   });
 }
@@ -486,6 +513,7 @@ export async function getBundles() {
     method: "GET",
   }).then((response) => {
     bundles = response.data.data;
+    useShopStore.setState({ bundles });
     return bundles;
   });
 }
@@ -666,27 +694,21 @@ export async function addSkinToWishList(skin: any) {
   if (!skinExists) {
     // Agregar la skin si no está en la wishlist
     wishListSkins.push(skin);
-    try {
-      await AsyncStorage.setItem(
-        "wishListSkins",
-        JSON.stringify(wishListSkins)
-      );
-    } catch (error) {
-      console.error("Error guardando en AsyncStorage:", error);
-    }
   } else {
     // Eliminar la skin de la wishlist si ya existe
     wishListSkins = wishListSkins.filter(
       (skinInWishList: any) => skinInWishList.uuid !== skin.uuid
     );
-    try {
-      await AsyncStorage.setItem(
-        "wishListSkins",
-        JSON.stringify(wishListSkins)
-      );
-    } catch (error) {
-      console.error("Error eliminando en AsyncStorage:", error);
-    }
+  }
+
+  try {
+    await AsyncStorage.setItem(
+      "wishListSkins",
+      JSON.stringify(wishListSkins)
+    );
+    useShopStore.setState({ wishListSkins: [...wishListSkins] });
+  } catch (error) {
+    console.error("Error updating wishlist in AsyncStorage:", error);
   }
 }
 
@@ -706,6 +728,7 @@ export async function fetchSkinsWishList() {
     } else {
       wishListSkins = [];
     }
+    useShopStore.setState({ wishListSkins });
   } catch (error) {
     console.error("Error fetching skins from AsyncStorage:", error);
   }

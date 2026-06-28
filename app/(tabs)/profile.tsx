@@ -11,15 +11,14 @@ import { Colors } from "@/constants/Colors";
 import { accountLogout } from "../index";
 import { TabBarIcon } from "@/components/navigation/TabBarIcon";
 import {
-  GameName,
   getPlayerMMR,
   isInWishList,
   PlayerCard,
   PlayerLoadout,
-  PlayerMMR,
-  TagLine,
   wishListSkins,
 } from "../../API/valorant-api";
+import { useShopStore } from "../../src/store/useShopStore";
+import { useAuthStore } from "../../src/store/useAuthStore";
 import { Switch } from "react-native-switch";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -40,6 +39,10 @@ export default function Profile() {
   const [inWishlist, setInWishlist] = useState<boolean>(false);
   const [notificationsEnabledF, setNotificationsEnabledF] = useState(true);
   const navigation = useNavigation(); // Acceso al objeto de navegación
+
+  const PlayerMMR = useShopStore((state) => state.playerMMR);
+  const GameName = useAuthStore((state) => state.gameName);
+  const TagLine = useAuthStore((state) => state.tagline);
 
   useEffect(() => {
     const fetchPlayerMMR = async () => {

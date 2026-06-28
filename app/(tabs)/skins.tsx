@@ -12,7 +12,8 @@ import {
 import React, { useState, useEffect, useRef } from "react";
 import { Text } from "react-native";
 import { Colors } from "@/constants/Colors";
-import { addSkinToWishList, isInWishList, skins } from "../../API/valorant-api";
+import { addSkinToWishList, isInWishList } from "../../API/valorant-api";
+import { useShopStore } from "../../src/store/useShopStore";
 import { ResizeMode, Video } from "expo-av";
 import { useNavigation } from "expo-router"; // Para obtener el objeto de navegación
 import { TabBarIcon } from "@/components/navigation/TabBarIcon";
@@ -20,6 +21,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { SkinPreview } from "@/components/SkinPreview";
 
 export default function Skins() {
+  const skins = useShopStore((state) => state.skins);
   const [searchQuery, setSearchQuery] = useState(""); // Estado para el texto de búsqueda
   const [visibleSkins, setVisibleSkins] = useState(skins); // Todas las skins visibles por defecto
   const [selectedSkin, setSelectedSkin] = useState<any | null>(null); // Estado para la skin seleccionada
@@ -27,6 +29,10 @@ export default function Skins() {
   const [inWishlist, setInWishlist] = useState<boolean>(false);
   const navigation = useNavigation(); // Acceso al objeto de navegación
   const flatListRef = useRef<FlatList>(null); // Referencia para FlatList
+
+  useEffect(() => {
+    setVisibleSkins(skins);
+  }, [skins]);
 
   // useEffect para escuchar los cambios de pantalla/tab
   useEffect(() => {

@@ -4,6 +4,8 @@ import { jwtDecode, JwtPayload } from "jwt-decode";
 import React, { useEffect, useState, useRef } from "react";
 import { Redirect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuthStore } from "../src/store/useAuthStore";
+import { useShopStore } from "../src/store/useShopStore";
 import { Colors } from "@/constants/Colors";
 import axios from "axios";
 import * as Updates from "expo-updates"; // Importa expo-updates para reiniciar la app
@@ -88,13 +90,49 @@ export default function Index() {
     "https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid";
 
   const isProcessingToken = useRef(false);
+  const restoreSession = useAuthStore((state) => state.restoreSession);
 
   usePushNotifications();
 
   useEffect(() => {
     fetchNotificationStatus();
     loadVersion();
-    checkTokens();
+
+    const initSession = async () => {
+      console.log("Checking for stored session...");
+      const restored = await restoreSession();
+      if (restored) {
+        const state = useAuthStore.getState();
+        SetAccessToken(state.accessToken!);
+        SetIdToken(state.idToken!);
+        SetPlayerUUID(state.playerUUID!);
+        SetExpiresIn(state.expiresIn || "");
+        SetTagline(state.tagline || "");
+        SetGameName(state.gameName || "");
+
+        try {
+          await SetAccountShard();
+          await getEntitlementToken();
+          await getGameSkins();
+          await getBundles();
+          await getContentTiers();
+          await fetchSkinsWishList();
+          await GetPlayerLoadout();
+          await getPlayerCard();
+          await getMaps();
+          await getAgents();
+          await getRankTiers();
+          await checkTokens();
+        } catch (error) {
+          console.error("Failed to restore session assets:", error);
+          setLogged(false);
+        }
+      } else {
+        setLogged(false);
+      }
+    };
+
+    initSession();
   }, []);
 
   const fetchNotificationStatus = async () => {
@@ -132,10 +170,21 @@ export default function Index() {
       SetPlayerUUID(playerUUID);
       SetAccessToken(accessToken);
       SetIdToken(idToken);
-      await SetAccountShard();
+      const resolvedShard = await SetAccountShard();
       SetExpiresIn(expiresIn);
       SetTagline(idTokenDecoded.acct.tag_line);
       SetGameName(idTokenDecoded.acct.game_name);
+
+      // Save in SecureStore and AsyncStorage via Zustand
+      await useAuthStore.getState().setSession(
+        accessToken,
+        idToken,
+        playerUUID,
+        resolvedShard || "na",
+        expiresIn,
+        idTokenDecoded.acct.game_name,
+        idTokenDecoded.acct.tag_line
+      );
 
       // Fetch data only after tokens are set
       await getEntitlementToken();
@@ -195,7 +244,31 @@ export default function Index() {
 
   return (
     <>
-      {!isLogged ? (
+      {isLogged === null ? (
+        <View
+          style={{
+            flexGrow: 1,
+            width: "100%",
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: Colors.dark.background,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: "Rubik700",
+              fontSize: 25,
+              color: Colors.accent.color,
+              marginBottom: 15,
+              textAlign: "center",
+              textTransform: "uppercase",
+            }}
+          >
+            Restoring Session...
+          </Text>
+          <ActivityIndicator size="large" color={Colors.accent.color} />
+        </View>
+      ) : !isLogged ? (
         <>
           <View
             style={{

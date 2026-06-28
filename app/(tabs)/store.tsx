@@ -9,18 +9,15 @@ import {
 } from "react-native";
 import React from "react";
 import {
-  featuredBundle,
   getSkin,
   isInWishList,
-  storeSkins,
-  nightMarket,
   AccessToken,
   PlayerUUID,
   EntitlementsToken,
   fetchStoreData,
   storeFrontData,
-  accessoryStoreOffers,
 } from "../../API/valorant-api";
+import { useShopStore } from "../../src/store/useShopStore";
 import { Colors } from "@/constants/Colors";
 import CurrencyIcon from "@/components/CurrencyIcon";
 import { LinearGradient } from "expo-linear-gradient";
@@ -42,6 +39,11 @@ export default function Store() {
   const [debugStoreData, setDebugStoreData] = useState<any>([]);
   const scrollViewRef = useRef<ScrollView>(null);
   const navigation = useNavigation();
+
+  const storeSkins = useShopStore((state) => state.storeSkins);
+  const featuredBundle = useShopStore((state) => state.featuredBundle);
+  const nightMarket = useShopStore((state) => state.nightMarket);
+  const accessoryStoreOffers = useShopStore((state) => state.accessoryStoreOffers);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("blur", () => {
