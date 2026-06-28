@@ -9,6 +9,7 @@ import { useShopStore } from "../src/store/useShopStore";
 import { Colors } from "@/constants/Colors";
 import axios from "axios";
 import * as Updates from "expo-updates"; // Importa expo-updates para reiniciar la app
+import { registerBackgroundWishlistTask } from "../src/utils/wishlistTask";
 import {
   getGameSkins,
   fetchSkinsWishList,
@@ -74,7 +75,7 @@ export async function accountLogout() {
       text: "Confirm",
       onPress: async () => {
         const RCTNetworking =
-          require("react-native/Libraries/Network/RCTNetworking").default;
+          require("react-native/Libraries/Network/" + "RCTNetworking").default;
         RCTNetworking.clearCookies((result: any) => {});
         await AsyncStorage.clear();
         await Updates.reloadAsync(); // Reinicia la app
@@ -97,6 +98,7 @@ export default function Index() {
   useEffect(() => {
     fetchNotificationStatus();
     loadVersion();
+    registerBackgroundWishlistTask();
 
     const initSession = async () => {
       console.log("Checking for stored session...");

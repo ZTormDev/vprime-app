@@ -9,11 +9,16 @@ import * as NavigationBar from 'expo-navigation-bar';
 import { Platform, View, LogBox } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ErrorBoundary } from '../src/components/common/ErrorBoundary';
+import { OfflineBanner } from '../src/components/common/OfflineBanner';
 
 // Ignore known deprecation and environment warnings
 LogBox.ignoreLogs([
   "expo-notifications failed to load (expected in Expo Go SDK 53+)",
   "Deep imports from the 'react-native' package are deprecated",
+  "expo-background-fetch: This library is deprecated. Use expo-background-task instead.",
+  "`Background Fetch` functionality is not available in Expo Go",
+  "On iOS `VideoPlayer.replace` loads the asset data synchronously",
 ]);
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -64,25 +69,28 @@ export default function RootLayout() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <View style={{ flex: 1, backgroundColor: 'black' }}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: Colors.dark.background }}>
-          <Stack screenOptions={{
-            headerShown: false, 
-            statusBarHidden: false, 
-            statusBarTranslucent: true, 
-            statusBarStyle: 'light', 
-            statusBarColor: 'black', 
-            navigationBarColor: 'black', 
-            navigationBarHidden: false,
-            contentStyle: {backgroundColor: Colors.dark.background},
-            }}>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          </Stack>
-        </SafeAreaView>
-      </View>
-      <StatusBar style="light" hidden={false} translucent={true} />
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <View style={{ flex: 1, backgroundColor: 'black' }}>
+          <OfflineBanner />
+          <SafeAreaView style={{ flex: 1, backgroundColor: Colors.dark.background }}>
+            <Stack screenOptions={{
+              headerShown: false, 
+              statusBarHidden: false, 
+              statusBarTranslucent: true, 
+              statusBarStyle: 'light', 
+              statusBarColor: 'black', 
+              navigationBarColor: 'black', 
+              navigationBarHidden: false,
+              contentStyle: {backgroundColor: Colors.dark.background},
+              }}>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            </Stack>
+          </SafeAreaView>
+        </View>
+        <StatusBar style="light" hidden={false} translucent={true} />
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

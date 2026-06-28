@@ -7,7 +7,6 @@ let Notifications: any = null;
 try {
   Notifications = require('expo-notifications');
 } catch (e) {
-  console.log("expo-notifications failed to load (expected in Expo Go SDK 53+). Push notifications will be disabled in this environment.");
   Notifications = {
     scheduleNotificationAsync: async () => {},
     setNotificationHandler: () => {},

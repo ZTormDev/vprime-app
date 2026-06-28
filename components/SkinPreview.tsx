@@ -23,9 +23,21 @@ export const SkinPreview = ({
   setSelectedSkin,
   price,
 }) => {
-  // Add a new state to manage the current video
   const [currentVideoPreview, setCurrentVideoPreview] = useState(videoPreview);
   const [modalVisible, setModalVisible] = useState(false);
+
+  const player = useVideoPlayer(currentVideoPreview, (playerInstance) => {
+    playerInstance.loop = true;
+    playerInstance.play();
+    playerInstance.volume = 1;
+  });
+
+  React.useEffect(() => {
+    if (player && currentVideoPreview) {
+      player.replaceAsync(currentVideoPreview);
+      player.play();
+    }
+  }, [currentVideoPreview, player]);
 
   return (
     <View
@@ -136,14 +148,9 @@ export const SkinPreview = ({
                 borderWidth: 1,
                 borderColor: Colors.dark.cardPress,
               }}
-              player={useVideoPlayer(currentVideoPreview, (player) => {
-                player.loop = true;
-                player.play();
-                player.volume = 1;
-              })}
+              player={player}
               contentFit="cover"
               nativeControls={false}
-              allowsFullscreen={false}
               allowsPictureInPicture={false}
             />
           ) : (
