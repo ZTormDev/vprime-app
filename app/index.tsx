@@ -1,4 +1,4 @@
-import { ActivityIndicator, Alert, Text, View } from "react-native";
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from "react-native";
 import { WebView } from "react-native-webview";
 import { jwtDecode, JwtPayload } from "jwt-decode";
 import React, { useEffect, useState, useRef } from "react";
@@ -8,7 +8,7 @@ import { useAuthStore } from "../src/store/useAuthStore";
 import { useShopStore } from "../src/store/useShopStore";
 import { Colors } from "@/constants/Colors";
 import axios from "axios";
-import * as Updates from "expo-updates"; // Importa expo-updates para reiniciar la app
+import * as Updates from "expo-updates";
 import { registerBackgroundWishlistTask } from "../src/utils/wishlistTask";
 import {
   getGameSkins,
@@ -66,7 +66,7 @@ interface CustomJwtPayload extends JwtPayload {
 //   });
 
 export async function accountLogout() {
-  Alert.alert("Logout Confirm", "Are you sure to logout?", [
+  Alert.alert("Log Out?", "Are you sure you want to log out?", [
     {
       text: "Cancel",
       style: "cancel",
@@ -78,7 +78,7 @@ export async function accountLogout() {
           require("react-native/Libraries/Network/" + "RCTNetworking").default;
         RCTNetworking.clearCookies((result: any) => {});
         await AsyncStorage.clear();
-        await Updates.reloadAsync(); // Reinicia la app
+        await Updates.reloadAsync();
       },
     },
   ]);
@@ -144,7 +144,7 @@ export default function Index() {
         setNotificationsEnabled(notifyStatus === "true");
       }
     } catch (error) {
-      console.error("Error al obtener los tokens de AsyncStorage:", error);
+      console.error("Error reading notification status from AsyncStorage:", error);
     }
   };
 
@@ -158,7 +158,6 @@ export default function Index() {
       const idToken = idTokenMatch[1];
       const expiresIn = expiresInMatch[1];
 
-      // Decoding the tokens using jwtDecode
       const accessTokenDecoded = jwtDecode<JwtPayload>(accessToken);
       const idTokenDecoded = jwtDecode<CustomJwtPayload>(idToken);
 
@@ -177,7 +176,6 @@ export default function Index() {
       SetTagline(idTokenDecoded.acct.tag_line);
       SetGameName(idTokenDecoded.acct.game_name);
 
-      // Save in SecureStore and AsyncStorage via Zustand
       await useAuthStore.getState().setSession(
         accessToken,
         idToken,
@@ -188,7 +186,6 @@ export default function Index() {
         idTokenDecoded.acct.tag_line
       );
 
-      // Fetch data only after tokens are set
       await getEntitlementToken();
       await getGameSkins();
       await getBundles();
@@ -200,7 +197,6 @@ export default function Index() {
       await getAgents();
       await getRankTiers();
 
-      // Once everything is fetched, check tokens
       await checkTokens();
     }
   };
@@ -237,78 +233,40 @@ export default function Index() {
     ) {
       await fetchStoreData();
       setLogged(true);
-      console.log("Estás logeado, tienes todos los tokens");
+      console.log("Logged in with all required tokens");
     } else {
       setLogged(false);
-      console.log("No estás logeado, faltan tokens");
+      console.log("Not logged in, missing required tokens");
     }
   }
 
   return (
     <>
       {isLogged === null ? (
-        <View
-          style={{
-            flexGrow: 1,
-            width: "100%",
-            justifyContent: "center",
-            alignItems: "center",
-            backgroundColor: Colors.dark.background,
-          }}
-        >
-          <Text
-            style={{
-              fontFamily: "Rubik700",
-              fontSize: 25,
-              color: Colors.accent.color,
-              marginBottom: 15,
-              textAlign: "center",
-              textTransform: "uppercase",
-            }}
-          >
-            Restoring Session...
-          </Text>
-          <ActivityIndicator size="large" color={Colors.accent.color} />
+        <View style={styles.centerScreen}>
+          <View style={styles.statusCard}>
+            <ActivityIndicator size="large" color={Colors.accent.blue} />
+            <Text style={styles.statusTitle}>Restoring Session</Text>
+            <Text style={styles.statusSubtitle}>Preparing your store and profile.</Text>
+          </View>
         </View>
       ) : !isLogged ? (
         <>
-          <View
-            style={{
-              flexGrow: 1,
-              width: "100%",
-              justifyContent: "center",
-              alignItems: "center",
-              backgroundColor: Colors.dark.background,
-              display: webViewShow ? "flex" : "none",
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: "Rubik700",
-                fontSize: 25,
-                color: Colors.accent.color,
-                marginBottom: 15,
-                textAlign: "center",
-                textTransform: "uppercase",
-              }}
-            >
-              Login with your Riot Account
-            </Text>
-            <View
-              style={{
-                width: "90%",
-                height: "80%",
-                borderRadius: 10,
-                backgroundColor: "red",
-              }}
-            >
+          <View style={[styles.loginScreen, { display: webViewShow ? "flex" : "none" }]}>
+            <View style={styles.loginHeader}>
+              <Text style={styles.loginEyebrow}>VPrime</Text>
+              <Text style={styles.loginTitle}>Login</Text>
+              <Text style={styles.loginSubtitle}>
+                Connect your Riot account to load the store, skins and career data.
+              </Text>
+            </View>
+            <View style={styles.webViewCard}>
               <WebView
-                style={{}}
+                style={styles.webView}
                 source={{ uri: riotAuth }}
                 onNavigationStateChange={(navState) => {
                   const { url } = navState;
 
-                  // Verifica si la URL contiene los tokens
                   if (
                     url.includes("access_token") &&
                     url.includes("id_token") &&
@@ -316,36 +274,20 @@ export default function Index() {
                   ) {
                     if (isProcessingToken.current) return;
                     isProcessingToken.current = true;
-                    setShowWebView(false); // Oculta el WebView
-                    extractTokensFromUrl(url); // Extrae los tokens de la URL
+                    setShowWebView(false);
+                    extractTokensFromUrl(url);
                   }
                 }}
               />
             </View>
           </View>
           {!webViewShow && (
-            <View
-              style={{
-                flexGrow: 1,
-                width: "100%",
-                justifyContent: "center",
-                alignItems: "center",
-                backgroundColor: Colors.dark.background,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "Rubik700",
-                  fontSize: 25,
-                  color: Colors.accent.color,
-                  marginBottom: 15,
-                  textAlign: "center",
-                  textTransform: "uppercase",
-                }}
-              >
-                Fetching data...
-              </Text>
-              <ActivityIndicator size="large" color={Colors.accent.color} />
+            <View style={styles.centerScreen}>
+              <View style={styles.statusCard}>
+                <ActivityIndicator size="large" color={Colors.accent.blue} />
+                <Text style={styles.statusTitle}>Fetching Data</Text>
+                <Text style={styles.statusSubtitle}>Syncing inventory and account data.</Text>
+              </View>
             </View>
           )}
         </>
@@ -355,3 +297,81 @@ export default function Index() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  centerScreen: {
+    flexGrow: 1,
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Colors.dark.background,
+    padding: 16,
+  },
+  statusCard: {
+    width: "100%",
+    borderRadius: 8,
+    padding: 22,
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: Colors.dark.surface,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  statusTitle: {
+    fontFamily: "Rubik800",
+    fontSize: 24,
+    color: Colors.dark.text,
+    textAlign: "center",
+  },
+  statusSubtitle: {
+    fontFamily: "Rubik400",
+    fontSize: 14,
+    color: Colors.dark.muted,
+    textAlign: "center",
+  },
+  loginScreen: {
+    flexGrow: 1,
+    width: "100%",
+    alignItems: "center",
+    backgroundColor: Colors.dark.background,
+    padding: 16,
+    gap: 14,
+  },
+  loginHeader: {
+    width: "100%",
+    borderRadius: 8,
+    padding: 18,
+    backgroundColor: Colors.dark.backgroundAlt,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  loginEyebrow: {
+    fontFamily: "Rubik700",
+    fontSize: 13,
+    color: Colors.accent.green,
+  },
+  loginTitle: {
+    fontFamily: "Rubik800",
+    fontSize: 34,
+    color: Colors.dark.text,
+  },
+  loginSubtitle: {
+    fontFamily: "Rubik400",
+    fontSize: 14,
+    lineHeight: 20,
+    color: Colors.dark.muted,
+  },
+  webViewCard: {
+    width: "100%",
+    flex: 1,
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: Colors.dark.backgroundAlt,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  webView: {
+    flex: 1,
+    backgroundColor: Colors.dark.backgroundAlt,
+  },
+});

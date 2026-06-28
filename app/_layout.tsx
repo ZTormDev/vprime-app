@@ -46,14 +46,15 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (Platform.OS === 'android') {
+      const navigationBar = NavigationBar as any;
       if (NavigationBar && typeof NavigationBar.setVisibilityAsync === 'function') {
         NavigationBar.setVisibilityAsync('visible');
       }
-      if (NavigationBar && typeof NavigationBar.setBackgroundColorAsync === 'function') {
-        NavigationBar.setBackgroundColorAsync('black');
+      if (navigationBar && typeof navigationBar.setBackgroundColorAsync === 'function') {
+        navigationBar.setBackgroundColorAsync(Colors.dark.background);
       }
-      if (NavigationBar && typeof NavigationBar.setButtonStyleAsync === 'function') {
-        NavigationBar.setButtonStyleAsync('light');
+      if (navigationBar && typeof navigationBar.setButtonStyleAsync === 'function') {
+        navigationBar.setButtonStyleAsync('light');
       }
     }
   }, []);
@@ -71,17 +72,11 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <View style={{ flex: 1, backgroundColor: 'black' }}>
+        <View style={{ flex: 1, backgroundColor: Colors.dark.background }}>
           <OfflineBanner />
           <SafeAreaView style={{ flex: 1, backgroundColor: Colors.dark.background }}>
             <Stack screenOptions={{
               headerShown: false, 
-              statusBarHidden: false, 
-              statusBarTranslucent: true, 
-              statusBarStyle: 'light', 
-              statusBarColor: 'black', 
-              navigationBarColor: 'black', 
-              navigationBarHidden: false,
               contentStyle: {backgroundColor: Colors.dark.background},
               }}>
               <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -89,7 +84,7 @@ export default function RootLayout() {
             </Stack>
           </SafeAreaView>
         </View>
-        <StatusBar style="light" hidden={false} translucent={true} />
+        <StatusBar style="light" hidden={false} />
       </QueryClientProvider>
     </ErrorBoundary>
   );

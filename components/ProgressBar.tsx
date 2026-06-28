@@ -6,8 +6,8 @@ const ProgressBar = ({
   value = 0,
   maxValue = 100,
   height = 10,
-  barColor = Colors.text.highlighted,
-  backgroundColor = Colors.dark.cardPress,
+  barColor = Colors.accent.blue,
+  backgroundColor = Colors.dark.surfaceStrong,
   showValues = true,
   isRankBar = true,
 }) => {
@@ -35,7 +35,7 @@ const ProgressBar = ({
         <Text style={styles.text}>RANK RATING</Text>
 
         <Text style={styles.text}>
-          <Text style={{ color: Colors.text.highlighted }}>{value}</Text>
+            <Text style={{ color: Colors.accent.blue }}>{value}</Text>
           <Text style={{ color: Colors.dark.text }}>{` / ${maxValue}`}</Text>
         </Text>
       </View>
@@ -69,7 +69,7 @@ const ProgressBar = ({
             width: "100%",
           }}
         >
-          <Text style={{ color: Colors.text.active }}>{value}</Text>
+          <Text style={{ color: Colors.accent.blue }}>{value}</Text>
           <Text style={{ color: Colors.dark.text }}>{` / ${maxValue}`}</Text>
         </Text>
       )}
@@ -80,18 +80,17 @@ const ProgressBar = ({
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    borderRadius: 5,
+    borderRadius: 8,
     overflow: "hidden",
     justifyContent: "center",
-    padding: 1.5,
-    paddingHorizontal: 2,
+    padding: 2,
   },
   progress: {
     height: "100%",
-    borderRadius: 5,
+    borderRadius: 8,
   },
   text: {
-    color: Colors.dark.text,
+    color: Colors.dark.muted,
     fontSize: 13,
     fontFamily: "Rubik500",
   },

@@ -4,7 +4,7 @@ import {
   ScrollView,
   Text,
   Image,
-  TouchableHighlight,
+  TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
 } from "react-native";
@@ -23,6 +23,47 @@ import { SkinPreview } from "@/components/SkinPreview";
 import { BundlePreview } from "@/components/BundlePreview";
 import { AccessoryPreview } from "@/components/AccesoryPreview";
 import { useNavigation } from "expo-router";
+import { TabBarIcon } from "@/components/navigation/TabBarIcon";
+
+type SectionHeaderProps = {
+  eyebrow?: string;
+  title: string;
+  timer?: string;
+  tone?: "blue" | "green" | "red" | "violet";
+};
+
+function SectionHeader({ eyebrow, title, timer, tone = "blue" }: SectionHeaderProps) {
+  const toneStyle = {
+    blue: styles.blueChip,
+    green: styles.greenChip,
+    red: styles.redChip,
+    violet: styles.violetChip,
+  }[tone];
+
+  return (
+    <View style={styles.sectionHeader}>
+      <View>
+        {eyebrow && <Text style={styles.eyebrow}>{eyebrow}</Text>}
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </View>
+      {timer && (
+        <View style={[styles.timerChip, toneStyle]}>
+          <TabBarIcon name="time-outline" color={Colors.dark.text} size={15} />
+          <Text style={styles.timerText}>{timer}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function PriceChip({ icon = "vp", value }: { icon?: "vp" | "kdc" | "rad"; value: any }) {
+  return (
+    <View style={styles.priceChip}>
+      <CurrencyIcon icon={icon} size={17} />
+      <Text style={styles.priceText}>{value}</Text>
+    </View>
+  );
+}
 
 export default function StoreScreen() {
   const [OffersTimeRemaining, setOffersTimeRemaining] = useState("");
@@ -192,273 +233,186 @@ export default function StoreScreen() {
   };
 
   const handleWishlistPress = async (skin: any) => {
-    let inWishlist = await isInWishList(skin);
-    setInWishlist(inWishlist);
+    const wishlisted = await isInWishList(skin);
+    setInWishlist(wishlisted);
   };
+
+  const renderSkinCard = (skin: any, accent = skin.TierColor) => (
+    <TouchableOpacity
+      key={skin.uuid}
+      activeOpacity={0.76}
+      onPress={() => showSkinPanel(true, skin.levels[0].uuid)}
+      style={styles.skinCard}
+    >
+      <LinearGradient
+        colors={["rgba(255,255,255,0.06)", accent || Colors.accent.blueSoft]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.cardGradient}
+      />
+      <View style={styles.cardTopRow}>
+        <Text style={styles.cardMeta} numberOfLines={1}>
+          {skin.TierName || "Weapon Skin"}
+        </Text>
+        <PriceChip value={skin.Cost} />
+      </View>
+      <View style={styles.skinImageWrap}>
+        <Image
+          source={{ uri: skin.levels[0].displayIcon || skin.displayIcon }}
+          style={styles.skinImage}
+        />
+      </View>
+      <Text style={styles.skinNameText} numberOfLines={2}>
+        {skin.displayName}
+      </Text>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={styles.scrollViewContent}
-      >
-        {AccessToken && storeSkins && featuredBundle ? (
-          <ScrollView
-            ref={scrollViewRef}
-            style={styles.innerScrollView}
-          >
-            {nightMarket && nightMarket.Offers.length > 0 && (
-              <View style={styles.nightMarketContainer}>
-                <Text style={styles.nightMarketTitle}>
-                  NIGHT MARKET IS ARRIVED! 🌙
-                </Text>
-                <View style={styles.dividerContainer}>
-                  <View style={styles.dividerLine} />
-                  <View style={styles.dividerTextContainer}>
-                    <Text style={styles.dividerText}>NIGHT MARKET</Text>
-                    <Text style={styles.dividerPipe}> | </Text>
-                    <Text style={styles.dividerHighlight}>
-                      {nightMarketTimeRemaining}
+      {AccessToken && storeSkins && featuredBundle ? (
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.hero}>
+            <LinearGradient
+              colors={[Colors.accent.blueSoft, Colors.accent.greenSoft, "transparent"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.heroWash}
+            />
+            <Text style={styles.heroEyebrow}>VPrime</Text>
+            <Text style={styles.heroTitle}>Store</Text>
+            <Text style={styles.heroSubtitle}>
+              Daily offers, featured collections, and accessories in one clean view.
+            </Text>
+          </View>
+
+          {nightMarket && nightMarket.Offers.length > 0 && (
+            <View style={styles.section}>
+              <SectionHeader
+                eyebrow="Event"
+                title="Night Market"
+                timer={nightMarketTimeRemaining}
+                tone="violet"
+              />
+              <View style={styles.skinList}>
+                {nightMarket.Offers.map((skin: any) =>
+                  renderSkinCard(skin, skin.TierColor || Colors.accent.violetSoft)
+                )}
+              </View>
+            </View>
+          )}
+
+          <View style={styles.section}>
+            <SectionHeader
+              eyebrow="Featured"
+              title="Bundle"
+              timer={featuredBundleTimeRemaining}
+              tone="green"
+            />
+            {featuredBundle && featuredBundle.displayIcon && (
+              <TouchableOpacity
+                activeOpacity={0.78}
+                onPress={() => setSelectedBundle(featuredBundle)}
+                style={styles.bundleCard}
+              >
+                <Image
+                  source={{ uri: featuredBundle.displayIcon }}
+                  style={styles.bundleImage}
+                />
+                <LinearGradient
+                  colors={["rgba(16,17,20,0.95)", "rgba(16,17,20,0.35)", "rgba(16,17,20,0.86)"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.bundleOverlay}
+                />
+                <View style={styles.bundleContent}>
+                  <View>
+                    <Text style={styles.bundleLabel}>Collection</Text>
+                    <Text style={styles.bundleNameText} numberOfLines={2}>
+                      {featuredBundle.displayName}
                     </Text>
                   </View>
-                  <View style={styles.dividerLine} />
+                  <PriceChip value={featuredBundle.bundlePrice} />
                 </View>
-                <View style={styles.skinList}>
-                  {nightMarket.Offers.map((skin: any) => (
-                    <TouchableHighlight
-                      key={skin.uuid}
-                      activeOpacity={0.25}
-                      underlayColor={Colors.dark.cardPress}
-                      onPress={() => showSkinPanel(true, skin.levels[0].uuid)}
-                      style={styles.skinItemTouch}
-                    >
-                      <View style={{ width: "100%" }}>
-                        <LinearGradient
-                          colors={["rgba(0,0,0,0.1)", skin.TierColor]}
-                          style={styles.gradientOverlay}
-                        />
-                        <View style={styles.skinItemContent}>
-                          <View style={styles.costContainer}>
-                            <CurrencyIcon icon="vp" size={22} />
-                            <Text style={styles.costText}>{skin.Cost}</Text>
-                          </View>
-
-                          <View style={styles.imageContainer}>
-                            <Image
-                              source={{
-                                uri:
-                                  skin.levels[0].displayIcon ||
-                                  skin.displayIcon,
-                              }}
-                              style={styles.skinImage}
-                            />
-                          </View>
-
-                          <Text style={styles.skinNameText}>
-                            {skin.displayName}
-                          </Text>
-                        </View>
-                      </View>
-                    </TouchableHighlight>
-                  ))}
-                </View>
-              </View>
+              </TouchableOpacity>
             )}
-
-            <View style={styles.bundleContainer}>
-              <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
-                <View style={styles.dividerTextContainer}>
-                  <Text style={styles.dividerText}>FEATURED BUNDLE</Text>
-                </View>
-                <View style={styles.dividerLine} />
-              </View>
-              {featuredBundle && featuredBundle.displayIcon && (
-                <TouchableHighlight
-                  activeOpacity={0.25}
-                  underlayColor={Colors.dark.card}
-                  onPress={() => {
-                    setSelectedBundle(featuredBundle);
-                  }}
-                  style={styles.bundleTouch}
-                >
-                  <View>
-                    <Image
-                      source={{ uri: featuredBundle.displayIcon }}
-                      style={styles.bundleImage}
-                    />
-                    <LinearGradient
-                      colors={[
-                        "rgba(0,0,0,0.6)",
-                        "rgba(0,0,0,0.5)",
-                        "transparent",
-                      ]}
-                      style={styles.bundleGradient}
-                    />
-                    <View style={styles.bundleContent}>
-                      <View style={{ flexDirection: "column" }}>
-                        <View style={styles.bundleTextContainer}>
-                          <Text style={styles.bundleHeaderText}>FEATURED</Text>
-                          <Text style={styles.dividerPipe}> | </Text>
-                          <Text style={styles.dividerHighlight}>
-                            {featuredBundle.timeRemaining &&
-                              featuredBundleTimeRemaining}
-                          </Text>
-                        </View>
-                        <Text style={styles.bundleNameText}>
-                          {featuredBundle.displayName}
-                        </Text>
-                        <Text style={styles.bundleHeaderText}>COLLECTION</Text>
-                      </View>
-                      <View style={styles.bundlePriceContainer}>
-                        <View style={styles.bundlePriceInner}>
-                          <CurrencyIcon size={28} icon="vp" />
-                          <Text style={styles.bundlePriceText}>
-                            {featuredBundle.bundlePrice}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-                </TouchableHighlight>
-              )}
-            </View>
-
-            <View style={styles.offersContainer}>
-              <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
-                <View style={styles.dividerTextContainer}>
-                  <Text style={styles.dividerText}>OFFERS</Text>
-                  <Text style={styles.dividerPipe}> | </Text>
-                  <Text style={styles.dividerHighlight}>
-                    {OffersTimeRemaining}
-                  </Text>
-                </View>
-                <View style={styles.dividerLine} />
-              </View>
-              <View style={styles.skinList}>
-                {storeSkins.map((skin: any) => (
-                  <TouchableHighlight
-                    key={skin.uuid}
-                    activeOpacity={0.25}
-                    underlayColor={Colors.dark.cardPress}
-                    onPress={() => showSkinPanel(true, skin.levels[0].uuid)}
-                    style={styles.skinItemTouch}
-                  >
-                    <View style={{ width: "100%" }}>
-                      <LinearGradient
-                        colors={["rgba(0,0,0,0.1)", skin.TierColor]}
-                        style={styles.gradientOverlay}
-                      />
-                      <View style={styles.skinItemContent}>
-                        <View style={styles.costContainer}>
-                          <CurrencyIcon icon="vp" size={22} />
-                          <Text style={styles.costText}>{skin.Cost}</Text>
-                        </View>
-
-                        <View style={styles.imageContainer}>
-                          <Image
-                            source={{
-                              uri:
-                                skin.levels[0].displayIcon || skin.displayIcon,
-                            }}
-                            style={styles.skinImage}
-                          />
-                        </View>
-
-                        <Text style={styles.skinNameText}>
-                          {skin.displayName}
-                        </Text>
-                      </View>
-                    </View>
-                  </TouchableHighlight>
-                ))}
-              </View>
-            </View>
-
-            <View style={{ alignItems: "center" }}>
-              <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
-                <View style={styles.dividerTextContainer}>
-                  <Text style={styles.dividerText}>ACCESSORY STORE</Text>
-                  <Text style={styles.dividerPipe}> | </Text>
-                  <Text style={styles.dividerHighlight}>
-                    {OffersTimeRemaining}
-                  </Text>
-                </View>
-                <View style={styles.dividerLine} />
-              </View>
-              <View style={styles.accessoryList}>
-                {accessoryStoreOffers &&
-                  accessoryStoreOffers.map((accessory: any) => (
-                    <TouchableHighlight
-                      key={accessory.uuid}
-                      activeOpacity={0.25}
-                      underlayColor={Colors.dark.cardPress}
-                      onPress={() => setSelectedAccessory(accessory)}
-                      style={styles.accessoryTouch}
-                    >
-                      <View style={{ width: "100%" }}>
-                        <LinearGradient
-                          colors={["rgba(0,0,0,0.15)", Colors.dark.cardPress]}
-                          style={styles.gradientOverlay}
-                        />
-                        <View style={styles.accessoryContent}>
-                          <View style={styles.accessoryHeader}>
-                            <Text style={styles.accessoryType}>
-                              {accessory.itemType}
-                            </Text>
-                            <View style={styles.accessoryCostContainer}>
-                              <CurrencyIcon icon="kdc" size={20} />
-                              <Text style={styles.accessoryCost}>
-                                {accessory.Cost}
-                              </Text>
-                            </View>
-                          </View>
-
-                          {accessory.displayIcon ? (
-                            <View style={styles.accessoryImageContainer}>
-                              <Image
-                                source={{ uri: accessory.displayIcon }}
-                                style={{
-                                  width: "65%",
-                                  resizeMode: "contain",
-                                  aspectRatio:
-                                    accessory.itemType === "Player Card"
-                                      ? 3 / 4
-                                      : 1,
-                                  height:
-                                    accessory.itemType === "Player Card"
-                                      ? 180
-                                      : 100,
-                                }}
-                              />
-                            </View>
-                          ) : (
-                            <View style={styles.accessoryTextPlaceholder}>
-                              <Text style={styles.accessoryTitlePlaceholder}>
-                                "{accessory.displayName}"
-                              </Text>
-                            </View>
-                          )}
-
-                          <Text style={styles.accessoryName}>
-                            {accessory.displayName}
-                          </Text>
-                        </View>
-                      </View>
-                    </TouchableHighlight>
-                  ))}
-              </View>
-            </View>
-          </ScrollView>
-        ) : (
-          <View style={{ justifyContent: "center", alignItems: "center", gap: 10 }}>
-            <Text style={styles.loadingContainer}>Loading...</Text>
-            <ActivityIndicator size="large" color={Colors.accent.color} />
           </View>
-        )}
-      </ScrollView>
+
+          <View style={styles.section}>
+            <SectionHeader
+              eyebrow="Daily"
+              title="Offers"
+              timer={OffersTimeRemaining}
+            />
+            <View style={styles.skinList}>
+              {storeSkins.map((skin: any) => renderSkinCard(skin))}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader
+              eyebrow="Extras"
+              title="Accessory Store"
+              timer={OffersTimeRemaining}
+              tone="red"
+            />
+            <View style={styles.accessoryList}>
+              {accessoryStoreOffers &&
+                accessoryStoreOffers.map((accessory: any) => (
+                  <TouchableOpacity
+                    key={accessory.uuid}
+                    activeOpacity={0.76}
+                    onPress={() => setSelectedAccessory(accessory)}
+                    style={styles.accessoryCard}
+                  >
+                    <View style={styles.accessoryHeader}>
+                      <Text style={styles.cardMeta}>{accessory.itemType}</Text>
+                      <PriceChip icon="kdc" value={accessory.Cost} />
+                    </View>
+
+                    {accessory.displayIcon ? (
+                      <View style={styles.accessoryImageContainer}>
+                        <Image
+                          source={{ uri: accessory.displayIcon }}
+                          style={[
+                            styles.accessoryImage,
+                            {
+                              aspectRatio:
+                                accessory.itemType === "Player Card" ? 3 / 4 : 1,
+                              height:
+                                accessory.itemType === "Player Card" ? 176 : 104,
+                            },
+                          ]}
+                        />
+                      </View>
+                    ) : (
+                      <View style={styles.accessoryTextPlaceholder}>
+                        <Text style={styles.accessoryTitlePlaceholder}>
+                          {accessory.displayName}
+                        </Text>
+                      </View>
+                    )}
+
+                    <Text style={styles.accessoryName} numberOfLines={2}>
+                      {accessory.displayName}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+            </View>
+          </View>
+        </ScrollView>
+      ) : (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color={Colors.accent.blue} />
+          <Text style={styles.loadingText}>Loading store</Text>
+        </View>
+      )}
+
       {selectedSkin && (
         <SkinPreview
           selectedSkin={selectedSkin}
@@ -491,270 +445,266 @@ export default function StoreScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    width: "100%",
-    backgroundColor: "#252525",
+    flex: 1,
+    backgroundColor: Colors.dark.background,
   },
-  scrollViewContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1,
+  scrollView: {
+    flex: 1,
   },
-  innerScrollView: {
-    width: "100%",
-    marginBottom: 25,
-    marginTop: 15,
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 104,
+    gap: 28,
   },
-  nightMarketContainer: {
-    alignItems: "center",
-    marginBottom: 40,
-  },
-  nightMarketTitle: {
-    textAlign: "center",
-    marginHorizontal: 8,
-    marginVertical: 5,
-    fontFamily: "Rubik700",
-    color: "#9b55ff",
-    fontSize: 30,
-    marginBottom: 22,
-  },
-  dividerContainer: {
+  hero: {
     overflow: "hidden",
-    display: "flex",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "90%",
-    marginBottom: 15,
+    borderRadius: 8,
+    padding: 18,
+    minHeight: 142,
+    backgroundColor: Colors.dark.backgroundAlt,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    justifyContent: "flex-end",
+    shadowColor: Colors.shadow.color,
+    shadowOpacity: Colors.shadow.softOpacity,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
   },
-  dividerLine: {
-    borderColor: Colors.dark.cardPress,
-    borderBottomWidth: 1.5,
-    width: "100%",
+  heroWash: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
   },
-  dividerTextContainer: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    gap: 8,
-  },
-  dividerText: {
-    fontFamily: "Rubik400",
-    color: Colors.dark.text,
-    fontSize: 16,
-    textTransform: "uppercase",
-  },
-  dividerPipe: {
+  heroEyebrow: {
+    color: Colors.accent.green,
     fontFamily: "Rubik700",
-    color: "white",
     fontSize: 13,
-    textTransform: "uppercase",
   },
-  dividerHighlight: {
-    textShadowRadius: 3,
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowColor: "black",
-    fontFamily: "Rubik500",
-    color: Colors.text.highlighted,
-    fontSize: 17,
-    textTransform: "uppercase",
+  heroTitle: {
+    color: Colors.dark.text,
+    fontFamily: "Rubik800",
+    fontSize: 34,
+  },
+  heroSubtitle: {
+    color: Colors.dark.muted,
+    fontFamily: "Rubik400",
+    fontSize: 14,
+    lineHeight: 20,
+    maxWidth: "88%",
+  },
+  section: {
+    width: "100%",
+    gap: 14,
+  },
+  sectionHeader: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    gap: 12,
+  },
+  eyebrow: {
+    color: Colors.dark.subtle,
+    fontFamily: "Rubik600",
+    fontSize: 12,
+  },
+  sectionTitle: {
+    color: Colors.dark.text,
+    fontFamily: "Rubik700",
+    fontSize: 24,
+  },
+  timerChip: {
+    minHeight: 30,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  blueChip: {
+    backgroundColor: Colors.accent.blueSoft,
+  },
+  greenChip: {
+    backgroundColor: Colors.accent.greenSoft,
+  },
+  redChip: {
+    backgroundColor: Colors.accent.ultraDarkRed,
+  },
+  violetChip: {
+    backgroundColor: Colors.accent.violetSoft,
+  },
+  timerText: {
+    color: Colors.dark.text,
+    fontFamily: "Rubik600",
+    fontSize: 12,
   },
   skinList: {
-    alignItems: "center",
-    gap: 25,
-    width: "100%",
+    gap: 14,
   },
-  skinItemTouch: {
+  skinCard: {
+    width: "100%",
+    minHeight: 182,
+    borderRadius: 8,
+    overflow: "hidden",
+    padding: 14,
+    backgroundColor: Colors.dark.card,
     borderWidth: 1,
-    borderColor: Colors.dark.cardPress,
-    width: "90%",
-    borderRadius: 2,
+    borderColor: Colors.dark.border,
   },
-  gradientOverlay: {
+  cardGradient: {
     position: "absolute",
-    width: "100%",
-    height: "100%",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    opacity: 0.52,
   },
-  skinItemContent: {
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    display: "flex",
-    flexDirection: "column",
-    padding: 8,
-  },
-  costContainer: {
-    paddingHorizontal: 5,
-    width: "100%",
+  cardTopRow: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+  },
+  cardMeta: {
+    flex: 1,
+    color: Colors.dark.muted,
+    fontFamily: "Rubik600",
+    fontSize: 12,
+    textTransform: "uppercase",
+  },
+  priceChip: {
+    minHeight: 30,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    flexDirection: "row",
     alignItems: "center",
     gap: 5,
+    backgroundColor: "rgba(0,0,0,0.24)",
+    borderWidth: 1,
+    borderColor: Colors.dark.hairline,
   },
-  costText: {
-    fontFamily: "Rubik400",
+  priceText: {
     color: Colors.dark.text,
-    fontSize: 20,
+    fontFamily: "Rubik600",
+    fontSize: 14,
   },
-  imageContainer: {
+  skinImageWrap: {
     width: "100%",
-    marginVertical: "-6%",
     alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 6,
   },
   skinImage: {
-    width: "80%",
+    width: "86%",
     resizeMode: "contain",
     aspectRatio: 16 / 9,
   },
   skinNameText: {
-    fontFamily: "Rubik500",
-    color: "white",
+    color: Colors.dark.text,
+    fontFamily: "Rubik700",
     fontSize: 20,
-    fontWeight: "500",
-    textAlign: "left",
-    textTransform: "uppercase",
   },
-  bundleContainer: {
-    alignItems: "center",
-    marginBottom: 25,
-  },
-  bundleTouch: {
-    marginBottom: 20,
+  bundleCard: {
+    width: "100%",
+    aspectRatio: 16 / 9,
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: Colors.dark.backgroundAlt,
     borderWidth: 1,
-    borderColor: Colors.dark.cardPress,
-    width: "90%",
-    borderRadius: 2,
+    borderColor: Colors.dark.border,
   },
   bundleImage: {
     position: "absolute",
     width: "100%",
-    resizeMode: "contain",
-    aspectRatio: 16 / 9,
-  },
-  bundleGradient: {
-    width: "100%",
     height: "100%",
+    resizeMode: "cover",
+  },
+  bundleOverlay: {
     position: "absolute",
-    aspectRatio: 16 / 9,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
   },
   bundleContent: {
     width: "100%",
-    flexDirection: "column",
+    height: "100%",
+    padding: 16,
     justifyContent: "space-between",
-    aspectRatio: 16 / 9,
-    padding: 12,
   },
-  bundleTextContainer: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    alignItems: "center",
-  },
-  bundleHeaderText: {
-    fontFamily: "Rubik400",
-    color: "white",
-    fontSize: 16,
+  bundleLabel: {
+    color: Colors.accent.green,
+    fontFamily: "Rubik700",
+    fontSize: 12,
     textTransform: "uppercase",
   },
   bundleNameText: {
+    color: Colors.dark.text,
     fontFamily: "Rubik800",
-    color: "white",
-    fontSize: 30,
-    textAlign: "left",
-    textTransform: "uppercase",
-    marginVertical: -10,
-  },
-  bundlePriceContainer: {
-    flexDirection: "column",
-    alignItems: "flex-end",
-    width: "100%",
-  },
-  bundlePriceInner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  bundlePriceText: {
-    fontFamily: "Rubik500",
-    color: "white",
-    fontSize: 23,
-    textTransform: "uppercase",
-  },
-  offersContainer: {
-    alignItems: "center",
-    marginBottom: 50,
+    fontSize: 28,
+    lineHeight: 31,
+    maxWidth: "86%",
   },
   accessoryList: {
-    alignItems: "center",
-    gap: 20,
+    gap: 14,
+  },
+  accessoryCard: {
     width: "100%",
-    marginTop: 10,
-  },
-  accessoryTouch: {
+    borderRadius: 8,
+    padding: 14,
+    overflow: "hidden",
+    backgroundColor: Colors.dark.card,
     borderWidth: 1,
-    borderColor: Colors.dark.cardPress,
-    width: "90%",
-    borderRadius: 2,
-  },
-  accessoryContent: {
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    display: "flex",
-    flexDirection: "column",
-    padding: 12,
+    borderColor: Colors.dark.border,
   },
   accessoryHeader: {
-    width: "100%",
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
-    alignItems: "center",
-  },
-  accessoryType: {
-    fontFamily: "Rubik400",
-    color: Colors.dark.text,
-    fontSize: 14,
-    textTransform: "uppercase",
-  },
-  accessoryCostContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  accessoryCost: {
-    fontFamily: "Rubik400",
-    color: Colors.dark.text,
-    fontSize: 18,
+    gap: 12,
   },
   accessoryImageContainer: {
     width: "100%",
+    minHeight: 120,
     marginVertical: 10,
+    justifyContent: "center",
     alignItems: "center",
   },
+  accessoryImage: {
+    width: "62%",
+    resizeMode: "contain",
+  },
   accessoryTextPlaceholder: {
-    width: "100%",
-    height: 80,
+    minHeight: 104,
     justifyContent: "center",
     alignItems: "center",
   },
   accessoryTitlePlaceholder: {
+    color: Colors.accent.green,
     fontFamily: "Rubik700",
-    color: Colors.text.highlighted,
     fontSize: 18,
-    fontStyle: "italic",
     textAlign: "center",
   },
   accessoryName: {
-    fontFamily: "Rubik500",
-    color: "white",
+    color: Colors.dark.text,
+    fontFamily: "Rubik700",
     fontSize: 18,
-    textAlign: "left",
-    textTransform: "uppercase",
-    marginTop: 5,
   },
-  loadingContainer: {
-    fontFamily: "Rubik600",
-    color: Colors.accent.color,
-    fontSize: 26,
-    textAlign: "center",
+  loadingWrap: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+  },
+  loadingText: {
+    color: Colors.dark.text,
+    fontFamily: "Rubik700",
+    fontSize: 18,
   },
 });

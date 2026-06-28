@@ -1,16 +1,14 @@
 import React from "react";
-import { Image, StyleSheet, ImageStyle } from "react-native";
+import { Image, ImageStyle, StyleSheet } from "react-native";
 import { Colors } from "../constants/Colors";
 
 interface Props {
-  icon: "vp" | "rad" | "kdc"; // Agregamos "kdc" como posible valor
+  icon: "vp" | "rad" | "kdc";
   size: number;
-  style?: ImageStyle; // Añadimos una prop opcional para el estilo
+  style?: ImageStyle;
 }
 
-export default function CurrencyIcon(props: Props) {
-  const { size, style, icon } = props;
-
+export default function CurrencyIcon({ size, style, icon }: Props) {
   return (
     <Image
       style={StyleSheet.flatten([
@@ -27,9 +25,8 @@ export default function CurrencyIcon(props: Props) {
           ? require("../assets/images/vp.png")
           : icon === "rad"
           ? require("../assets/images/rad.png")
-          : require("../assets/images/kdc.png") // Para "kdc"
+          : require("../assets/images/kdc.png")
       }
-      {...props}
     />
   );
 }

@@ -2,7 +2,6 @@ import {
   StyleSheet,
   Image,
   View,
-  TouchableHighlight,
   FlatList,
   TextInput,
   TouchableOpacity,
@@ -10,11 +9,13 @@ import {
 import React, { useState, useEffect, useRef } from "react";
 import { Text } from "react-native";
 import { Colors } from "@/constants/Colors";
-import { addSkinToWishList, isInWishList } from "../../API/valorant-api";
+import { isInWishList } from "../../API/valorant-api";
 import { useShopStore } from "../../src/store/useShopStore";
 import { useNavigation } from "expo-router";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { SkinPreview } from "@/components/SkinPreview";
+import { LinearGradient } from "expo-linear-gradient";
+import { TabBarIcon } from "@/components/navigation/TabBarIcon";
 
 export default function SkinsScreen() {
   const skins = useShopStore((state) => state.skins);
@@ -39,7 +40,7 @@ export default function SkinsScreen() {
     });
 
     return unsubscribe;
-  }, [navigation]);
+  }, [navigation, skins]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -64,8 +65,8 @@ export default function SkinsScreen() {
   };
 
   const handleWishlistPress = async (skin: any) => {
-    let inWishlist = await isInWishList(skin);
-    setInWishlist(inWishlist);
+    const wishlisted = await isInWishList(skin);
+    setInWishlist(wishlisted);
   };
 
   const handleSearchIcon = () => {
@@ -77,59 +78,82 @@ export default function SkinsScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.eyebrow}>Collection</Text>
+        <Text style={styles.title}>Skins</Text>
+        <Text style={styles.subtitle}>
+          Search weapons by name and open a skin to review its variants.
+        </Text>
+      </View>
+
       <View style={styles.searchContainer}>
+        <TabBarIcon name="search-outline" color={Colors.dark.subtle} size={22} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search skins by name..."
+          placeholder="Search skins by name"
           value={searchQuery}
           onChangeText={handleSearch}
-          placeholderTextColor="#888"
+          placeholderTextColor={Colors.dark.subtle}
         />
         <TouchableOpacity
           onPress={handleSearchIcon}
           style={styles.searchIconTouch}
+          activeOpacity={0.7}
         >
-          <MaterialIcons style={styles.searchIcon}>
-            {searchQuery ? "close" : "search"}
-          </MaterialIcons>
+          <MaterialIcons
+            name={searchQuery ? "close" : "tune"}
+            size={22}
+            color={searchQuery ? Colors.dark.text : Colors.accent.blue}
+          />
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.countText}>
-        ( {visibleSkins.length} Skins Founded )
-      </Text>
+      <View style={styles.countRow}>
+        <Text style={styles.countText}>{visibleSkins.length} skins found</Text>
+      </View>
 
       <FlatList
         ref={flatListRef}
         data={visibleSkins}
         keyExtractor={(item) => item.uuid}
         renderItem={({ item }) => (
-          <View style={styles.listItemContainer}>
-            <TouchableHighlight
-              key={item.uuid}
-              onPress={() => {
-                handleSkinPress(item);
-                handleWishlistPress(item);
+          <TouchableOpacity
+            onPress={() => {
+              handleSkinPress(item);
+              handleWishlistPress(item);
+            }}
+            activeOpacity={0.76}
+            style={styles.listItemTouch}
+          >
+            <LinearGradient
+              colors={["rgba(255,255,255,0.08)", item.TierColor || Colors.accent.blueSoft]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.cardGradient}
+            />
+            <View style={styles.listTextBlock}>
+              <Text style={styles.listMeta} numberOfLines={1}>
+                {item.TierName || "Weapon Skin"}
+              </Text>
+              <Text style={styles.listItemText} numberOfLines={2}>
+                {item.displayName}
+              </Text>
+            </View>
+            <Image
+              source={{
+                uri: item.levels[0].displayIcon || item.displayIcon,
               }}
-              activeOpacity={0.25}
-              underlayColor={Colors.dark.cardPress}
-              style={styles.listItemTouch}
-            >
-              <View style={styles.listItemContent}>
-                <Text style={styles.listItemText}>{item.displayName}</Text>
-                <Image
-                  source={{
-                    uri: item.levels[0].displayIcon || item.displayIcon,
-                  }}
-                  style={styles.listItemImage}
-                />
-              </View>
-            </TouchableHighlight>
-          </View>
+              style={styles.listItemImage}
+            />
+          </TouchableOpacity>
         )}
         style={styles.flatList}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
         ListEmptyComponent={() => (
-          <Text style={styles.emptyText}>No skins found.</Text>
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptyText}>No skins found.</Text>
+          </View>
         )}
       />
 
@@ -150,83 +174,127 @@ export default function SkinsScreen() {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: Colors.dark.background,
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 15,
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  header: {
+    borderRadius: 8,
+    padding: 18,
+    marginBottom: 14,
+    backgroundColor: Colors.dark.backgroundAlt,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  eyebrow: {
+    color: Colors.accent.blue,
+    fontFamily: "Rubik700",
+    fontSize: 13,
+  },
+  title: {
+    color: Colors.dark.text,
+    fontFamily: "Rubik800",
+    fontSize: 34,
+  },
+  subtitle: {
+    color: Colors.dark.muted,
+    fontFamily: "Rubik400",
+    fontSize: 14,
+    lineHeight: 20,
   },
   searchContainer: {
+    height: 52,
     flexDirection: "row",
     width: "100%",
-    justifyContent: "center",
-    marginTop: 30,
+    alignItems: "center",
+    gap: 10,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    backgroundColor: Colors.dark.surface,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
   },
   searchInput: {
-    backgroundColor: "white",
-    borderRadius: 50,
-    padding: 12,
-    paddingHorizontal: 20,
-    width: "90%",
+    flex: 1,
     fontFamily: "Rubik500",
-    fontSize: 18,
-    color: "black",
+    fontSize: 16,
+    color: Colors.dark.text,
+    paddingVertical: 0,
   },
   searchIconTouch: {
-    padding: 5,
-    position: "absolute",
-    right: "10%",
-    marginTop: 8,
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Colors.dark.surfaceStrong,
   },
-  searchIcon: {
-    fontSize: 30,
-    color: "#888",
+  countRow: {
+    minHeight: 40,
+    justifyContent: "center",
   },
   countText: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: "Rubik600",
-    color: Colors.text.highlighted,
-    textTransform: "uppercase",
-  },
-  listItemContainer: {
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  listItemTouch: {
-    backgroundColor: Colors.dark.card,
-    borderRadius: 2,
-    width: "90%",
-    borderWidth: 1,
-    borderColor: Colors.dark.cardPress,
-  },
-  listItemContent: {
-    width: "100%",
-    display: "flex",
-    flexDirection: "row",
-    flexWrap: "nowrap",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  listItemText: {
-    width: "60%",
-    fontFamily: "Rubik500",
-    color: "white",
-    fontSize: 18,
-    flexWrap: "wrap",
-  },
-  listItemImage: {
-    width: "40%",
-    resizeMode: "contain",
-    aspectRatio: 16 / 9,
+    color: Colors.dark.muted,
   },
   flatList: {
     width: "100%",
     flex: 1,
   },
+  listContent: {
+    paddingBottom: 104,
+    gap: 12,
+  },
+  listItemTouch: {
+    minHeight: 116,
+    borderRadius: 8,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    backgroundColor: Colors.dark.card,
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+  },
+  cardGradient: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    opacity: 0.42,
+  },
+  listTextBlock: {
+    flex: 1,
+    gap: 4,
+    paddingRight: 10,
+  },
+  listMeta: {
+    color: Colors.dark.muted,
+    fontFamily: "Rubik600",
+    fontSize: 12,
+    textTransform: "uppercase",
+  },
+  listItemText: {
+    fontFamily: "Rubik700",
+    color: Colors.dark.text,
+    fontSize: 19,
+    lineHeight: 23,
+  },
+  listItemImage: {
+    width: "42%",
+    resizeMode: "contain",
+    aspectRatio: 16 / 9,
+  },
+  emptyWrap: {
+    minHeight: 180,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   emptyText: {
-    color: "white",
-    fontSize: 18,
+    color: Colors.dark.muted,
+    fontSize: 17,
     fontFamily: "Rubik500",
     textAlign: "center",
   },

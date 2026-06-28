@@ -1,5 +1,5 @@
 import {
-  TouchableHighlight,
+  TouchableOpacity,
   View,
   Image,
   FlatList,
@@ -19,7 +19,6 @@ import {
 import { useShopStore } from "../../src/store/useShopStore";
 import { useAuthStore } from "../../src/store/useAuthStore";
 import { Switch } from "react-native-switch";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   notificationsEnabled,
@@ -29,6 +28,7 @@ import {
 import { useNavigation } from "expo-router";
 import { SkinPreview } from "@/components/SkinPreview";
 import { MatchHistory } from "@/components/MatchHistory";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function ProfileScreen() {
   const [showWishlist, setShowWishlist] = useState<boolean | null>(null);
@@ -72,7 +72,7 @@ export default function ProfileScreen() {
     await AsyncStorage.setItem("Notify", JSON.stringify(newStatus));
 
     if (newStatus) {
-      pushNotification("Notifications enabled! 🔔", undefined, null);
+      pushNotification("Notifications enabled!", undefined, null);
     }
   };
 
@@ -91,25 +91,31 @@ export default function ProfileScreen() {
   };
 
   const handleWishlistPress = async (skin: any) => {
-    let inWishlist = await isInWishList(skin);
-    setInWishlist(inWishlist);
+    const wishlisted = await isInWishList(skin);
+    setInWishlist(wishlisted);
   };
 
   return (
     <View style={styles.container}>
       {PlayerCard?.largeArt && (
-        <View style={styles.backgroundImageContainer}>
-          <Image
-            source={{ uri: PlayerCard.largeArt }}
-            blurRadius={10}
-            style={styles.backgroundImage}
-          />
-        </View>
+        <Image
+          source={{ uri: PlayerCard.largeArt }}
+          blurRadius={18}
+          style={styles.backgroundImage}
+        />
       )}
+      <LinearGradient
+        colors={["rgba(16,17,20,0.68)", Colors.dark.background]}
+        style={styles.backgroundFade}
+      />
 
-      <View style={styles.cardContainer}>
-        <View style={styles.profileHeader}>
-          <View style={styles.userInfoContainer}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.profileCard}>
+          <View style={styles.profileTop}>
             <View style={styles.avatarContainer}>
               <Image
                 source={{ uri: PlayerCard?.displayIcon }}
@@ -117,147 +123,153 @@ export default function ProfileScreen() {
               />
             </View>
             <View style={styles.userTextContainer}>
+              <Text style={styles.eyebrow}>Riot Account</Text>
               {GameName && TagLine && (
-                <View style={styles.nameTagContainer}>
-                  <Text style={styles.gameNameText}>{GameName}</Text>
+                <>
+                  <Text style={styles.gameNameText} numberOfLines={1}>
+                    {GameName}
+                  </Text>
                   <Text style={styles.taglineText}>#{TagLine}</Text>
-                </View>
+                </>
               )}
+            </View>
+            {PlayerMMR?.Rank?.largeIcon && (
+              <Image
+                style={styles.rankIcon}
+                source={{ uri: PlayerMMR.Rank.largeIcon }}
+              />
+            )}
+          </View>
 
-              {PlayerMMR?.Rank?.largeIcon && (
-                <Image
-                  style={styles.rankIcon}
-                  source={{ uri: PlayerMMR.Rank.largeIcon }}
-                />
-              )}
+          <View style={styles.quickStats}>
+            <View style={styles.statPill}>
+              <Text style={styles.statLabel}>Wishlist</Text>
+              <Text style={styles.statValue}>{wishListSkins?.length || 0}</Text>
+            </View>
+            <View style={styles.statPill}>
+              <Text style={styles.statLabel}>Rank</Text>
+              <Text style={styles.statValue} numberOfLines={1}>
+                {PlayerMMR?.Rank?.tierName || "Unrated"}
+              </Text>
             </View>
           </View>
-          <ScrollView style={styles.scrollContainer}>
-            <View style={styles.menuList}>
-              <TouchableHighlight
-                onPress={handleWishlist}
-                activeOpacity={0.25}
-                underlayColor={Colors.accent.darkRed}
-                style={styles.wishlistButton}
-              >
-                <View style={styles.menuInner}>
-                  <Text style={styles.menuButtonText}>Skins Wishlist</Text>
-                  <TabBarIcon
-                    name="heart"
-                    color={Colors.accent.red}
-                    size={28}
-                    style={{ justifyContent: "center", alignItems: "center" }}
-                  />
-                </View>
-              </TouchableHighlight>
-              <TouchableHighlight
-                onPress={handleMatchHistory}
-                activeOpacity={0.25}
-                underlayColor={Colors.dark.cardPress}
-                style={styles.careerButton}
-              >
-                <View style={styles.menuInner}>
-                  <Text style={styles.careerText}>Career</Text>
-                  <TabBarIcon
-                    name="time"
-                    color={Colors.accent.color}
-                    size={28}
-                    style={{ justifyContent: "center", alignItems: "center" }}
-                  />
-                </View>
-              </TouchableHighlight>
-            </View>
-          </ScrollView>
         </View>
-        <View>
-          <Text
-            onPress={accountLogout}
-            style={styles.logoutText}
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Actions</Text>
+          <TouchableOpacity
+            onPress={handleWishlist}
+            activeOpacity={0.76}
+            style={styles.actionRow}
           >
-            Log Out
-          </Text>
+            <View style={[styles.actionIcon, styles.heartIcon]}>
+              <TabBarIcon name="heart" color={Colors.accent.red} size={22} />
+            </View>
+            <View style={styles.actionTextBlock}>
+              <Text style={styles.actionTitle}>Skins Wishlist</Text>
+              <Text style={styles.actionSubtitle}>Saved skins and notifications</Text>
+            </View>
+            <TabBarIcon name="chevron-forward" color={Colors.dark.subtle} size={20} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={handleMatchHistory}
+            activeOpacity={0.76}
+            style={styles.actionRow}
+          >
+            <View style={[styles.actionIcon, styles.careerIcon]}>
+              <TabBarIcon name="time" color={Colors.accent.blue} size={22} />
+            </View>
+            <View style={styles.actionTextBlock}>
+              <Text style={styles.actionTitle}>Career</Text>
+              <Text style={styles.actionSubtitle}>Competitive match history</Text>
+            </View>
+            <TabBarIcon name="chevron-forward" color={Colors.dark.subtle} size={20} />
+          </TouchableOpacity>
         </View>
-      </View>
+
+        <TouchableOpacity
+          onPress={accountLogout}
+          activeOpacity={0.76}
+          style={styles.logoutButton}
+        >
+          <TabBarIcon name="log-out-outline" color={Colors.accent.red} size={20} />
+          <Text style={styles.logoutText}>Log Out</Text>
+        </TouchableOpacity>
+      </ScrollView>
 
       {showWishlist && (
         <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Your Wishlist</Text>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalEyebrow}>Saved</Text>
+                <Text style={styles.modalTitle}>Your Wishlist</Text>
+              </View>
+              <TouchableOpacity
+                onPress={handleWishlist}
+                style={styles.iconButton}
+                activeOpacity={0.72}
+              >
+                <TabBarIcon name="close" color={Colors.dark.text} size={22} />
+              </TouchableOpacity>
+            </View>
+
             <View style={styles.notificationRow}>
-              <Text style={styles.notificationText}>Notifications</Text>
+              <View style={styles.notificationTextBlock}>
+                <Text style={styles.notificationText}>Notifications</Text>
+                <Text style={styles.notificationHint}>Alerts for your saved skins</Text>
+              </View>
               <Switch
-                backgroundActive={Colors.accent.color}
-                backgroundInactive={Colors.dark.tabBar}
-                circleActiveColor={Colors.accent.highlighted}
-                circleInActiveColor="#f4f3f4"
-                circleBorderWidth={2}
-                circleBorderActiveColor={Colors.accent.color}
-                circleBorderInactiveColor={Colors.dark.tabBar}
+                backgroundActive={Colors.accent.blue}
+                backgroundInactive={Colors.dark.surfaceStrong}
+                circleActiveColor={Colors.dark.text}
+                circleInActiveColor={Colors.dark.muted}
+                circleBorderWidth={0}
                 onValueChange={toggleNotifications}
                 value={notificationsEnabledF}
                 activeText=""
                 inActiveText=""
                 barHeight={28}
-                circleSize={28}
-              />
-              <MaterialIcons
-                name={
-                  notificationsEnabledF
-                    ? "notifications-on"
-                    : "notifications-off"
-                }
-                size={28}
-                color={notificationsEnabledF ? Colors.accent.color : "#f4f3f4"}
+                circleSize={26}
               />
             </View>
-          </View>
-          <FlatList
-            data={wishListSkins}
-            keyExtractor={(item) => item.uuid}
-            renderItem={({ item }) => (
-              <View style={styles.wishlistListItemContainer}>
-                <TouchableHighlight
-                  key={item.uuid}
+
+            <FlatList
+              data={wishListSkins}
+              keyExtractor={(item) => item.uuid}
+              renderItem={({ item }) => (
+                <TouchableOpacity
                   onPress={() => {
                     handleSkinPress(item);
                     handleWishlistPress(item);
                   }}
-                  activeOpacity={0.25}
-                  underlayColor={Colors.dark.cardPress}
-                  style={styles.wishlistListItemTouch}
+                  activeOpacity={0.76}
+                  style={styles.wishlistItem}
                 >
-                  <View style={styles.wishlistListItemContent}>
-                    <Text style={styles.wishlistListItemText}>
-                      {item.displayName}
-                    </Text>
-                    <Image
-                      source={{
-                        uri: item.levels[0].displayIcon || item.displayIcon,
-                      }}
-                      style={styles.wishlistListItemImage}
-                    />
-                  </View>
-                </TouchableHighlight>
-              </View>
-            )}
-            style={styles.wishlistFlatList}
-            ListEmptyComponent={() => (
-              <Text style={styles.wishlistEmptyText}>
-                No skins in your wishlist add one in Skins Section.
-              </Text>
-            )}
-          />
-
-          <TouchableHighlight
-            onPress={() => {
-              handleWishlist();
-            }}
-            activeOpacity={0.25}
-            underlayColor={Colors.accent.darkRed}
-            style={styles.modalCloseButton}
-          >
-            <Text style={styles.modalCloseButtonText}>Close</Text>
-          </TouchableHighlight>
+                  <Text style={styles.wishlistItemText} numberOfLines={2}>
+                    {item.displayName}
+                  </Text>
+                  <Image
+                    source={{
+                      uri: item.levels[0].displayIcon || item.displayIcon,
+                    }}
+                    style={styles.wishlistItemImage}
+                  />
+                </TouchableOpacity>
+              )}
+              style={styles.wishlistFlatList}
+              contentContainerStyle={styles.wishlistContent}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={() => (
+                <View style={styles.emptyWrap}>
+                  <Text style={styles.wishlistEmptyText}>
+                    No skins in your wishlist yet.
+                  </Text>
+                </View>
+              )}
+            />
+          </View>
         </View>
       )}
 
@@ -281,245 +293,281 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     backgroundColor: Colors.dark.background,
-    flexGrow: 1,
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 10,
-    gap: 30,
-  },
-  backgroundImageContainer: {
-    width: "100%",
-    height: "100%",
-    top: 0,
-    left: 0,
-    zIndex: 0,
-    position: "absolute",
-    opacity: 0.25,
-    margin: 10,
   },
   backgroundImage: {
+    position: "absolute",
     width: "100%",
     height: "100%",
+    opacity: 0.28,
   },
-  cardContainer: {
-    backgroundColor: Colors.dark.card,
+  backgroundFade: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 104,
+    gap: 16,
+  },
+  profileCard: {
+    borderRadius: 8,
+    padding: 16,
+    backgroundColor: Colors.dark.tabBar,
     borderWidth: 1,
-    borderColor: Colors.dark.cardPress,
-    borderRadius: 2,
-    padding: 20,
-    width: "100%",
-    height: "100%",
-    justifyContent: "space-between",
-    zIndex: 1,
+    borderColor: Colors.dark.border,
+    gap: 16,
+    shadowColor: Colors.shadow.color,
+    shadowOpacity: Colors.shadow.mediumOpacity,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 12,
   },
-  profileHeader: {
-    justifyContent: "flex-start",
-    alignItems: "center",
-    width: "100%",
-  },
-  userInfoContainer: {
+  profileTop: {
     flexDirection: "row",
-    width: "100%",
     alignItems: "center",
-    gap: 20,
-    marginBottom: 30,
-    backgroundColor: Colors.dark.background,
-    padding: 10,
-    height: 80,
-    borderWidth: 1,
-    borderColor: Colors.dark.cardPress,
+    gap: 12,
   },
   avatarContainer: {
-    aspectRatio: 4 / 4,
-    height: "100%",
+    width: 76,
+    height: 76,
     overflow: "hidden",
-    borderRadius: 2,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.dark.cardPress,
-    justifyContent: "center",
-    alignItems: "center",
+    borderColor: Colors.dark.border,
+    backgroundColor: Colors.dark.surface,
   },
   avatarImage: {
     width: "100%",
     height: "100%",
   },
   userTextContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "70%",
+    flex: 1,
   },
-  nameTagContainer: {
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "flex-start",
-    height: "100%",
+  eyebrow: {
+    color: Colors.accent.green,
+    fontFamily: "Rubik700",
+    fontSize: 12,
   },
   gameNameText: {
-    color: Colors.text.highlighted,
-    fontSize: 24,
-    fontFamily: "Rubik500",
-    textAlign: "center",
-    padding: 0,
-    marginVertical: -5,
+    color: Colors.dark.text,
+    fontSize: 25,
+    fontFamily: "Rubik800",
   },
   taglineText: {
-    color: Colors.text.active,
-    fontSize: 20,
-    fontFamily: "Rubik500",
-    textAlign: "center",
-    padding: 0,
-    marginVertical: -5,
+    color: Colors.dark.muted,
+    fontSize: 16,
+    fontFamily: "Rubik600",
   },
   rankIcon: {
-    aspectRatio: 1 / 1,
-    height: "90%",
+    width: 58,
+    height: 58,
+    resizeMode: "contain",
   },
-  scrollContainer: {
-    width: "100%",
-  },
-  menuList: {
-    width: "100%",
-    height: "100%",
-    alignItems: "center",
-    flexDirection: "column",
-    gap: 15,
-  },
-  wishlistButton: {
-    backgroundColor: Colors.accent.ultraDarkRed,
-    borderWidth: 1,
-    borderColor: Colors.accent.red,
-    borderRadius: 2,
-    padding: 8,
-    width: "100%",
-  },
-  menuButtonText: {
-    fontSize: 20,
-    color: Colors.accent.red,
-    fontFamily: "Rubik500",
-  },
-  menuInner: {
+  quickStats: {
     flexDirection: "row",
-    gap: 15,
+    gap: 10,
+  },
+  statPill: {
+    flex: 1,
+    minHeight: 62,
+    borderRadius: 8,
+    backgroundColor: Colors.dark.surface,
+    borderWidth: 1,
+    borderColor: Colors.dark.hairline,
+    padding: 10,
+    justifyContent: "center",
+  },
+  statLabel: {
+    color: Colors.dark.subtle,
+    fontFamily: "Rubik600",
+    fontSize: 12,
+  },
+  statValue: {
+    color: Colors.dark.text,
+    fontFamily: "Rubik800",
+    fontSize: 18,
+  },
+  section: {
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: Colors.dark.surface,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    gap: 10,
+  },
+  sectionTitle: {
+    color: Colors.dark.text,
+    fontFamily: "Rubik700",
+    fontSize: 20,
+    paddingHorizontal: 4,
+  },
+  actionRow: {
+    minHeight: 70,
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: Colors.dark.card,
+    borderWidth: 1,
+    borderColor: Colors.dark.hairline,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  actionIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
   },
-  careerButton: {
-    backgroundColor: Colors.dark.tabBar,
-    borderWidth: 1,
-    borderColor: Colors.accent.color,
-    borderRadius: 2,
-    padding: 8,
-    width: "100%",
+  heartIcon: {
+    backgroundColor: Colors.accent.ultraDarkRed,
   },
-  careerText: {
-    fontSize: 20,
-    color: Colors.accent.color,
-    fontFamily: "Rubik500",
+  careerIcon: {
+    backgroundColor: Colors.accent.blueSoft,
+  },
+  actionTextBlock: {
+    flex: 1,
+  },
+  actionTitle: {
+    color: Colors.dark.text,
+    fontFamily: "Rubik700",
+    fontSize: 17,
+  },
+  actionSubtitle: {
+    color: Colors.dark.muted,
+    fontFamily: "Rubik400",
+    fontSize: 13,
+  },
+  logoutButton: {
+    minHeight: 52,
+    borderRadius: 8,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: Colors.accent.ultraDarkRed,
+    borderWidth: 1,
+    borderColor: "rgba(255,77,97,0.32)",
   },
   logoutText: {
-    fontSize: 20,
+    fontSize: 16,
     textAlign: "center",
-    width: "100%",
-    fontFamily: "Rubik500",
-    color: Colors.dark.text,
-    backgroundColor: Colors.accent.red,
-    padding: 6,
-    borderRadius: 2,
-    borderWidth: 1,
-    borderColor: Colors.accent.ultraDarkRed,
+    fontFamily: "Rubik700",
+    color: Colors.accent.red,
   },
   modalContainer: {
-    backgroundColor: Colors.dark.background,
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
     zIndex: 10,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "flex-end",
+  },
+  modalSheet: {
+    height: "88%",
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    backgroundColor: Colors.dark.background,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    padding: 16,
   },
   modalHeader: {
-    width: "100%",
-    marginBottom: 15,
-    backgroundColor: Colors.dark.tabBar,
-    justifyContent: "center",
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 14,
+  },
+  modalEyebrow: {
+    color: Colors.accent.blue,
+    fontFamily: "Rubik700",
+    fontSize: 12,
   },
   modalTitle: {
-    fontFamily: "Rubik500",
+    fontFamily: "Rubik800",
     color: Colors.dark.text,
-    fontSize: 30,
-    marginTop: 15,
+    fontSize: 28,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Colors.dark.surfaceStrong,
   },
   notificationRow: {
     flexDirection: "row",
-    gap: 15,
-    marginVertical: 15,
+    gap: 14,
+    marginBottom: 14,
     alignItems: "center",
+    borderRadius: 8,
+    backgroundColor: Colors.dark.surface,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    padding: 12,
+  },
+  notificationTextBlock: {
+    flex: 1,
   },
   notificationText: {
-    fontFamily: "Rubik500",
+    fontFamily: "Rubik700",
     color: Colors.dark.text,
-    fontSize: 22,
+    fontSize: 16,
   },
-  wishlistListItemContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 15,
+  notificationHint: {
+    fontFamily: "Rubik400",
+    color: Colors.dark.muted,
+    fontSize: 12,
   },
-  wishlistListItemTouch: {
-    backgroundColor: Colors.dark.card,
-    borderRadius: 2,
-    width: "90%",
+  wishlistFlatList: {
+    flex: 1,
+  },
+  wishlistContent: {
+    gap: 12,
+    paddingBottom: 16,
+  },
+  wishlistItem: {
+    minHeight: 102,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.dark.cardPress,
-  },
-  wishlistListItemContent: {
-    width: "100%",
-    display: "flex",
+    borderColor: Colors.dark.border,
+    backgroundColor: Colors.dark.card,
     flexDirection: "row",
-    flexWrap: "nowrap",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    padding: 14,
+    gap: 10,
   },
-  wishlistListItemText: {
-    width: "60%",
-    fontFamily: "Rubik500",
-    color: "white",
-    fontSize: 20,
-    flexWrap: "wrap",
+  wishlistItemText: {
+    flex: 1,
+    fontFamily: "Rubik700",
+    color: Colors.dark.text,
+    fontSize: 17,
   },
-  wishlistListItemImage: {
-    width: "40%",
+  wishlistItemImage: {
+    width: "42%",
     resizeMode: "contain",
     aspectRatio: 16 / 9,
   },
-  wishlistFlatList: {
-    width: "100%",
-    flex: 1,
-    paddingTop: 10,
+  emptyWrap: {
+    minHeight: 180,
+    justifyContent: "center",
+    alignItems: "center",
   },
   wishlistEmptyText: {
-    color: "white",
-    fontSize: 18,
+    color: Colors.dark.muted,
+    fontSize: 17,
     fontFamily: "Rubik500",
-    textAlign: "center",
-  },
-  modalCloseButton: {
-    backgroundColor: Colors.accent.red,
-    borderRadius: 2,
-    padding: 10,
-    width: "92%",
-    marginVertical: 18,
-  },
-  modalCloseButtonText: {
-    fontFamily: "Rubik500",
-    color: "white",
-    fontSize: 20,
     textAlign: "center",
   },
 });

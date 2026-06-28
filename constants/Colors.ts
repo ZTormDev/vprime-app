@@ -1,34 +1,43 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
-
-
 export const Colors = {
-  light: {
-    
-  },
+  light: {},
   dark: {
-    text: '#e3e3e3',
-    background: '#292728',
-    card: 'rgba(255,255,255,0.075)',
-    cardPress: 'rgba(255,255,255,0.25)',
-    tabBar: '#432762',
-    icon: '#D4D7E7',
+    text: "#F8FAFC",
+    muted: "#A7AFBF",
+    subtle: "#6F7787",
+    background: "#101114",
+    backgroundAlt: "#17191F",
+    surface: "rgba(255,255,255,0.08)",
+    surfaceStrong: "rgba(255,255,255,0.14)",
+    card: "rgba(255,255,255,0.09)",
+    cardPress: "rgba(255,255,255,0.18)",
+    border: "rgba(255,255,255,0.14)",
+    hairline: "rgba(255,255,255,0.08)",
+    tabBar: "rgba(26,28,34,0.94)",
+    icon: "#DDE3EE",
   },
   accent: {
-    red: '#FF4654',
-    darkRed: '#ba3a46',
-    darkRed2: 'rgb(133, 41, 48)',
-    ultraDarkRed: '#5f1920',
-    color: '#F8BE30',
-    darkColor: '#a37d20',
-    highlighted: '#FEE339',
+    red: "#FF4D61",
+    darkRed: "#B93647",
+    darkRed2: "#7B2A36",
+    ultraDarkRed: "rgba(255,77,97,0.14)",
+    color: "#FFD166",
+    darkColor: "#9E7423",
+    highlighted: "#FFE39A",
+    blue: "#67B7FF",
+    blueSoft: "rgba(103,183,255,0.18)",
+    green: "#6EE7B7",
+    greenSoft: "rgba(110,231,183,0.16)",
+    violet: "#B59CFF",
+    violetSoft: "rgba(181,156,255,0.16)",
   },
   text: {
-    highlighted: '#39ffca',
-    active: 'rgba(46,218,161,1)',
-    dark: '#145e4b'
-  }
+    highlighted: "#6EE7B7",
+    active: "#77F0C5",
+    dark: "#1D705C",
+  },
+  shadow: {
+    color: "#000000",
+    softOpacity: 0.18,
+    mediumOpacity: 0.28,
+  },
 };
