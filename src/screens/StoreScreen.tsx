@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   ScrollView,
@@ -15,59 +15,20 @@ import {
   isInWishList,
   AccessToken,
   fetchStoreData,
+  getPlayerMMR,
 } from "../../API/valorant-api";
 import { useShopStore } from "../../src/store/useShopStore";
+import { useAuthStore } from "../../src/store/useAuthStore";
 import CurrencyIcon from "@/components/CurrencyIcon";
 import { LinearGradient } from "expo-linear-gradient";
-import { AppBlurView } from "@/src/components/common/AppBlurView";
 import { SkinPreview } from "@/components/SkinPreview";
 import { BundlePreview } from "@/components/BundlePreview";
 import { AccessoryPreview } from "@/components/AccesoryPreview";
-import { useNavigation } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { TabBarIcon } from "@/components/navigation/TabBarIcon";
 import { useTheme } from "@/src/hooks/useTheme";
-
-type SectionHeaderProps = {
-  eyebrow?: string;
-  title: string;
-  timer?: string;
-  tone?: "blue" | "green" | "red" | "violet";
-};
-
-function SectionHeader({ eyebrow, title, timer, tone = "blue" }: SectionHeaderProps) {
-  const { colors, accent } = useTheme();
-  const toneStyle = {
-    blue: { backgroundColor: accent.blueSoft },
-    green: { backgroundColor: accent.greenSoft },
-    red: { backgroundColor: accent.ultraDarkRed },
-    violet: { backgroundColor: accent.violetSoft },
-  }[tone];
-
-  return (
-    <View style={styles.sectionHeader}>
-      <View>
-        {eyebrow && <Text style={[styles.eyebrow, { color: colors.subtle }]}>{eyebrow}</Text>}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
-      </View>
-      {timer && (
-        <View style={[styles.timerChip, { borderColor: colors.border }, toneStyle]}>
-          <TabBarIcon name="time-outline" color={colors.text} size={15} />
-          <Text style={[styles.timerText, { color: colors.text }]}>{timer}</Text>
-        </View>
-      )}
-    </View>
-  );
-}
-
-function PriceChip({ icon = "vp", value }: { icon?: "vp" | "kdc" | "rad"; value: any }) {
-  const { colors } = useTheme();
-  return (
-    <View style={[styles.priceChip, { borderColor: colors.hairline }]}>
-      <CurrencyIcon icon={icon} size={17} />
-      <Text style={[styles.priceText, { color: colors.text }]}>{value}</Text>
-    </View>
-  );
-}
+import { SegmentHeader } from "@/src/components/common/SegmentHeader";
+import ProgressBar from "@/components/ProgressBar";
 
 export default function StoreScreen() {
   const [OffersTimeRemaining, setOffersTimeRemaining] = useState("");
@@ -80,25 +41,42 @@ export default function StoreScreen() {
   const [videoPreview, setVideoPreview] = useState<any>(null);
   const [inWishlist, setInWishlist] = useState<boolean>(false);
   const scrollViewRef = useRef<ScrollView>(null);
-  const navigation = useNavigation();
+  const router = useRouter();
 
   const storeSkins = useShopStore((state) => state.storeSkins);
   const featuredBundle = useShopStore((state) => state.featuredBundle);
   const nightMarket = useShopStore((state) => state.nightMarket);
   const accessoryStoreOffers = useShopStore((state) => state.accessoryStoreOffers);
+  const walletBalances = useShopStore((state) => state.walletBalances);
+
+  const playerMMR = useShopStore((state) => state.playerMMR);
+  const gameName = useAuthStore((state) => state.gameName);
+  const tagline = useAuthStore((state) => state.tagline);
+  const wishListSkins = useShopStore((state) => state.wishListSkins);
+  const playerCard = useShopStore((state) => state.playerCard);
+  const profileBackdropArt = playerCard?.wideArt || playerCard?.largeArt;
 
   const { colors, theme, accent: themeAccent } = useTheme();
-  const styles = React.useMemo(() => createStyles(colors, themeAccent), [colors, themeAccent]);
+  const styles = React.useMemo(() => createStyles(colors, themeAccent, theme), [colors, themeAccent, theme]);
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener("blur", () => {
-      setSelectedSkin(null);
-      setSelectedBundle(null);
-      scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
-    });
+    const fetchMMR = async () => {
+      if (!playerMMR) {
+        await getPlayerMMR();
+      }
+    };
+    fetchMMR();
+  }, [playerMMR]);
 
-    return unsubscribe;
-  }, [navigation]);
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        setSelectedSkin(null);
+        setSelectedBundle(null);
+        scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
+      };
+    }, [])
+  );
 
   const calculateFeaturedBundleTimeRemaining = async (
     initialSeconds: number
@@ -214,41 +192,38 @@ export default function StoreScreen() {
     setInWishlist(wishlisted);
   };
 
-  const renderSkinCard = (skin: any, accent = skin.TierColor) => (
+  const formatBalance = (value: number) => value.toLocaleString("en-US");
+
+  const renderMiniSkinCard = (skin: any, accent = skin.TierColor) => (
     <TouchableOpacity
       key={skin.uuid}
-      activeOpacity={0.76}
+      activeOpacity={0.8}
       onPress={() => showSkinPanel(true, skin.levels[0].uuid)}
-      style={styles.skinCard}
+      style={styles.miniSkinCard}
     >
-      <AppBlurView
-        tint={theme === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
-        intensity={42}
-        style={styles.blurLayer}
-      />
       <LinearGradient
         colors={[
-          theme === "dark" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)",
-          accent || themeAccent.blueSoft
+          theme === "dark" ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
+          accent || themeAccent.goldSoft
         ]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.cardGradient}
       />
-      <View style={styles.cardGlassTop} />
-      <View style={styles.cardTopRow}>
-        <Text style={styles.cardMeta} numberOfLines={1}>
-          {skin.TierName || "Weapon Skin"}
-        </Text>
-        <PriceChip value={skin.Cost} />
+
+      <View style={styles.miniCardTop}>
+        <View style={styles.miniPriceWrap}>
+          <CurrencyIcon icon="vp" size={13} />
+          <Text style={styles.miniPriceText}>{skin.Cost}</Text>
+        </View>
       </View>
-      <View style={styles.skinImageWrap}>
-        <Image
-          source={{ uri: skin.levels[0].displayIcon || skin.displayIcon }}
-          style={styles.skinImage}
-        />
-      </View>
-      <Text style={styles.skinNameText} numberOfLines={2}>
+
+      <Image
+        source={{ uri: skin.levels[0].displayIcon || skin.displayIcon }}
+        style={styles.miniSkinImage}
+      />
+
+      <Text style={styles.miniSkinName} numberOfLines={1}>
         {skin.displayName}
       </Text>
     </TouchableOpacity>
@@ -256,6 +231,8 @@ export default function StoreScreen() {
 
   return (
     <View style={styles.container}>
+      <SegmentHeader activeSegment="store" />
+
       {AccessToken && storeSkins && featuredBundle ? (
         <ScrollView
           ref={scrollViewRef}
@@ -264,158 +241,236 @@ export default function StoreScreen() {
           showsVerticalScrollIndicator={true}
           indicatorStyle={theme === "dark" ? "white" : "black"}
         >
-          <View style={styles.hero}>
+          {/* Row 1: Profile & Rank Bento Block */}
+          <View style={styles.bentoProfileCard}>
+            {profileBackdropArt && (
+              <Image
+                source={{ uri: profileBackdropArt }}
+                style={styles.profileBackdropArt}
+                blurRadius={4}
+              />
+            )}
             <LinearGradient
               colors={[
-                theme === "dark" ? "rgba(16,17,20,0.32)" : "rgba(248,250,252,0.32)",
-                themeAccent.blueSoft,
-                themeAccent.greenSoft,
-                theme === "dark" ? "rgba(16,17,20,0.72)" : "rgba(248,250,252,0.72)",
+                "rgba(90,30,130,0.44)", // Purple
+                "rgba(213,160,33,0.12)"  // Gold
               ]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.heroWash}
+              style={styles.profileBackdropTint}
             />
-            <Text style={styles.heroEyebrow}>VPrime</Text>
-            <Text style={styles.heroTitle}>Store</Text>
-            <Text style={styles.heroSubtitle}>
-              Daily offers, featured collections, and accessories in one clean view.
-            </Text>
-          </View>
 
-          {nightMarket && nightMarket.Offers.length > 0 && (
-            <View style={styles.section}>
-              <SectionHeader
-                eyebrow="Event"
-                title="Night Market"
-                timer={nightMarketTimeRemaining}
-                tone="violet"
-              />
-              <View style={styles.skinList}>
-                {nightMarket.Offers.map((skin: any) =>
-                  renderSkinCard(skin, skin.TierColor || themeAccent.violetSoft)
+            <View style={styles.profileMainRow}>
+              <View style={styles.avatarWrap}>
+                {playerCard?.displayIcon && (
+                  <Image source={{ uri: playerCard.displayIcon }} style={styles.avatarImg} />
                 )}
               </View>
+              <View style={styles.profileInfo}>
+                <Text style={styles.profileAgentLabel}>VALORANT ACTIVE</Text>
+                <Text style={styles.profileName} numberOfLines={1}>
+                  {gameName || "Agent"}
+                </Text>
+                <Text style={styles.profileTag}>#{tagline || "0000"}</Text>
+              </View>
+              {playerMMR?.Rank?.images?.largeIcon && (
+                <Image
+                  source={{ uri: playerMMR.Rank.images.largeIcon }}
+                  style={styles.profileRankBadge}
+                />
+              )}
+            </View>
+
+            <View style={styles.profileDivider} />
+
+            <View style={styles.profileProgressRow}>
+              <Text style={styles.profileProgressLabel}>
+                {playerMMR?.Rank?.tierName || "UNRANKED"}
+              </Text>
+              <View style={styles.progressContainer}>
+                <ProgressBar
+                  value={playerMMR?.LatestCompetitiveUpdate?.RankedRatingBeforeUpdate || 0}
+                  maxValue={100}
+                  isRankBar={true}
+                />
+              </View>
+            </View>
+          </View>
+
+          {/* Row 2: Side-by-Side Bento Blocks */}
+          <View style={styles.bentoRow}>
+            {/* Wallet Block */}
+            <View style={styles.walletBlock}>
+              <Text style={styles.bentoBlockLabel}>Wallet</Text>
+              <View style={styles.walletItems}>
+                <View style={styles.walletItem}>
+                  <CurrencyIcon icon="vp" size={18} />
+                  <Text style={styles.walletVal} numberOfLines={1}>
+                    {formatBalance(walletBalances.vp)}
+                  </Text>
+                </View>
+                <View style={styles.walletItem}>
+                  <CurrencyIcon icon="kdc" size={18} />
+                  <Text style={styles.walletVal} numberOfLines={1}>
+                    {formatBalance(walletBalances.kingdomCredits)}
+                  </Text>
+                </View>
+                <View style={styles.walletItem}>
+                  <CurrencyIcon icon="rad" size={18} />
+                  <Text style={styles.walletVal} numberOfLines={1}>
+                    {formatBalance(walletBalances.radianite)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Wishlist Block */}
+            <TouchableOpacity
+              onPress={() => router.replace("/(tabs)/profile")}
+              activeOpacity={0.8}
+              style={styles.wishlistBlock}
+            >
+              <TabBarIcon name="heart" color={themeAccent.red} size={26} />
+              <View style={styles.wishlistInfo}>
+                <Text style={styles.wishlistTitle}>Wishlist</Text>
+                <Text style={styles.wishlistSubtitle}>
+                  {wishListSkins?.length || 0} Saved Skins
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Row 3: Live Store Bento Grid Block */}
+          <View style={styles.bentoFullBlock}>
+            <View style={styles.blockHeaderRow}>
+              <View>
+                <Text style={styles.bentoBlockLabel}>Console Rotation</Text>
+                <Text style={styles.bentoBlockTitle}>Daily Offers</Text>
+              </View>
+              <View style={styles.blockTimer}>
+                <TabBarIcon name="time-outline" color={colors.text} size={14} />
+                <Text style={styles.blockTimerText}>{OffersTimeRemaining}</Text>
+              </View>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.miniCarousel}
+            >
+              {storeSkins.map((skin: any) => renderMiniSkinCard(skin))}
+            </ScrollView>
+          </View>
+
+          {/* Night Market Block (if active) */}
+          {nightMarket && nightMarket.Offers.length > 0 && (
+            <View style={styles.bentoFullBlock}>
+              <View style={[styles.blockHeaderRow, { marginBottom: 12 }]}>
+                <View>
+                  <Text style={[styles.bentoBlockLabel, { color: themeAccent.violet }]}>Special Event</Text>
+                  <Text style={styles.bentoBlockTitle}>Night Market</Text>
+                </View>
+                <View style={[styles.blockTimer, { backgroundColor: themeAccent.violetSoft }]}>
+                  <TabBarIcon name="time-outline" color={colors.text} size={14} />
+                  <Text style={styles.blockTimerText}>{nightMarketTimeRemaining}</Text>
+                </View>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.miniCarousel}
+              >
+                {nightMarket.Offers.map((skin: any) =>
+                  renderMiniSkinCard(skin, skin.TierColor || themeAccent.violetSoft)
+                )}
+              </ScrollView>
             </View>
           )}
 
-          <View style={styles.section}>
-            <SectionHeader
-              eyebrow="Featured"
-              title="Bundle"
-              timer={featuredBundleTimeRemaining}
-              tone="green"
-            />
-            {featuredBundle && featuredBundle.displayIcon && (
-              <TouchableOpacity
-                activeOpacity={0.78}
-                onPress={() => setSelectedBundle(featuredBundle)}
-                style={styles.bundleCard}
-              >
-                <AppBlurView
-                  tint={theme === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
-                  intensity={36}
-                  style={styles.blurLayer}
-                />
-                <Image
-                  source={{ uri: featuredBundle.displayIcon }}
-                  style={styles.bundleImage}
-                />
-                <LinearGradient
-                  colors={[
-                    theme === "dark" ? "rgba(16,17,20,0.95)" : "rgba(248,250,252,0.95)",
-                    theme === "dark" ? "rgba(16,17,20,0.35)" : "rgba(248,250,252,0.35)",
-                    theme === "dark" ? "rgba(16,17,20,0.86)" : "rgba(248,250,252,0.86)",
-                  ]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.bundleOverlay}
-                />
-                <View style={styles.bundleContent}>
-                  <View>
-                    <Text style={styles.bundleLabel}>Collection</Text>
-                    <Text style={styles.bundleNameText} numberOfLines={2}>
-                      {featuredBundle.displayName}
-                    </Text>
-                  </View>
-                  <PriceChip value={featuredBundle.bundlePrice} />
+          {/* Row 4: Featured Bundle Block */}
+          {featuredBundle && featuredBundle.displayIcon && (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setSelectedBundle(featuredBundle)}
+              style={styles.bentoBundleBlock}
+            >
+              <Image
+                source={{ uri: featuredBundle.displayIcon }}
+                style={styles.bundleBgImage}
+                blurRadius={3}
+              />
+              <LinearGradient
+                colors={[
+                  "rgba(9,10,12,0.1)",
+                  "rgba(9,10,12,0.85)"
+                ]}
+                style={styles.bundleOverlay}
+              />
+
+              <View style={styles.bundleContentRow}>
+                <View style={styles.bundleHeaderBlock}>
+                  <Text style={styles.bundleLabel}>Featured Collection</Text>
+                  <Text style={styles.bundleName} numberOfLines={1}>
+                    {featuredBundle.displayName}
+                  </Text>
                 </View>
-              </TouchableOpacity>
-            )}
-          </View>
 
-          <View style={styles.section}>
-            <SectionHeader
-              eyebrow="Daily"
-              title="Offers"
-              timer={OffersTimeRemaining}
-            />
-            <View style={styles.skinList}>
-              {storeSkins.map((skin: any) => renderSkinCard(skin))}
+                <View style={styles.bundlePriceChip}>
+                  <CurrencyIcon icon="vp" size={15} />
+                  <Text style={styles.bundlePriceText}>{featuredBundle.bundlePrice}</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {/* Row 5: Accessories Block */}
+          <View style={styles.bentoFullBlock}>
+            <View style={[styles.blockHeaderRow, { marginBottom: 12 }]}>
+              <View>
+                <Text style={styles.bentoBlockLabel}>Extras</Text>
+                <Text style={styles.bentoBlockTitle}>Accessory Offers</Text>
+              </View>
             </View>
-          </View>
 
-          <View style={styles.section}>
-            <SectionHeader
-              eyebrow="Extras"
-              title="Accessory Store"
-              timer={OffersTimeRemaining}
-              tone="red"
-            />
-            <View style={styles.accessoryList}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.miniCarousel}
+            >
               {accessoryStoreOffers &&
                 accessoryStoreOffers.map((accessory: any) => (
                   <TouchableOpacity
                     key={accessory.uuid}
-                    activeOpacity={0.76}
+                    activeOpacity={0.8}
                     onPress={() => setSelectedAccessory(accessory)}
-                    style={styles.accessoryCard}
+                    style={styles.miniAccessoryCard}
                   >
-                    <AppBlurView
-                      tint={theme === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
-                      intensity={38}
-                      style={styles.blurLayer}
-                    />
-                    <View style={styles.accessoryHeader}>
-                      <Text style={styles.cardMeta}>{accessory.itemType}</Text>
-                      <PriceChip icon="kdc" value={accessory.Cost} />
+                    <View style={styles.miniCardTop}>
+                      <View style={styles.miniPriceWrap}>
+                        <CurrencyIcon icon="kdc" size={13} />
+                        <Text style={styles.miniPriceText}>{accessory.Cost}</Text>
+                      </View>
                     </View>
 
-                    {accessory.displayIcon ? (
-                      <View style={styles.accessoryImageContainer}>
-                        <Image
-                          source={{ uri: accessory.displayIcon }}
-                          style={[
-                            styles.accessoryImage,
-                            {
-                              aspectRatio:
-                                accessory.itemType === "Player Card" ? 3 / 4 : 1,
-                              height:
-                                accessory.itemType === "Player Card" ? 176 : 104,
-                            },
-                          ]}
-                        />
-                      </View>
-                    ) : (
-                      <View style={styles.accessoryTextPlaceholder}>
-                        <Text style={styles.accessoryTitlePlaceholder}>
-                          {accessory.displayName}
-                        </Text>
-                      </View>
+                    {accessory.displayIcon && (
+                      <Image
+                        source={{ uri: accessory.displayIcon }}
+                        style={styles.miniAccessoryImage}
+                      />
                     )}
-
-                    <Text style={styles.accessoryName} numberOfLines={2}>
+                    <Text style={styles.miniAccessoryName} numberOfLines={1}>
                       {accessory.displayName}
                     </Text>
                   </TouchableOpacity>
                 ))}
-            </View>
+            </ScrollView>
           </View>
         </ScrollView>
       ) : (
         <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color={themeAccent.blue} />
-          <Text style={styles.loadingText}>Loading store</Text>
+          <ActivityIndicator size="large" color={themeAccent.gold} />
+          <Text style={styles.loadingText}>Loading Console Hub</Text>
         </View>
       )}
 
@@ -449,52 +504,7 @@ export default function StoreScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  sectionHeader: {
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    gap: 12,
-  },
-  eyebrow: {
-    fontFamily: "Rubik600",
-    fontSize: 12,
-  },
-  sectionTitle: {
-    fontFamily: "Rubik700",
-    fontSize: 24,
-  },
-  timerChip: {
-    minHeight: 30,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderWidth: 1,
-  },
-  timerText: {
-    fontFamily: "Rubik600",
-    fontSize: 12,
-  },
-  priceChip: {
-    minHeight: 30,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: "rgba(0,0,0,0.24)",
-    borderWidth: 1,
-  },
-  priceText: {
-    fontFamily: "Rubik600",
-    fontSize: 14,
-  },
-});
-
-function createStyles(colors: any, accent: any) {
+function createStyles(colors: any, accent: any, theme: string) {
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -505,125 +515,257 @@ function createStyles(colors: any, accent: any) {
     },
     scrollContent: {
       paddingHorizontal: 16,
-      paddingTop: 16,
-      paddingBottom: 150,
-      gap: 28,
+      paddingTop: 8,
+      paddingBottom: 60,
+      gap: 16,
     },
-    hero: {
-      overflow: "hidden",
-      borderRadius: 8,
-      padding: 18,
-      minHeight: 142,
-      backgroundColor: colors.glass,
+    bentoProfileCard: {
+      width: "100%",
+      borderRadius: 16,
       borderWidth: 1,
       borderColor: colors.glassBorder,
-      justifyContent: "flex-end",
-      shadowColor: "#000000",
-      shadowOpacity: 0.18,
-      shadowRadius: 18,
-      shadowOffset: { width: 0, height: 10 },
+      overflow: "hidden",
+      backgroundColor: colors.glass,
+      padding: 16,
     },
-    heroWash: {
+    profileBackdropArt: {
       position: "absolute",
       top: 0,
       right: 0,
       bottom: 0,
       left: 0,
+      opacity: 0.28,
+      resizeMode: "cover",
     },
-    heroEyebrow: {
-      color: colors.theme === "dark" ? colors.muted : accent.blue,
-      fontFamily: "Rubik700",
-      fontSize: 13,
-    },
-    heroTitle: {
-      color: colors.text,
-      fontFamily: "Rubik800",
-      fontSize: 34,
-    },
-    heroSubtitle: {
-      color: colors.muted,
-      fontFamily: "Rubik400",
-      fontSize: 14,
-      lineHeight: 20,
-      maxWidth: "88%",
-    },
-    section: {
-      width: "100%",
-      gap: 14,
-    },
-    skinList: {
-      gap: 14,
-    },
-    skinCard: {
-      width: "100%",
-      minHeight: 182,
-      borderRadius: 8,
-      overflow: "hidden",
-      padding: 14,
-      backgroundColor: colors.glass,
-      borderWidth: 1,
-      borderColor: colors.glassBorder,
-      shadowColor: "#000000",
-      shadowOpacity: 0.16,
-      shadowRadius: 14,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: 6,
-    },
-    cardGradient: {
+    profileBackdropTint: {
       position: "absolute",
+      left: 0,
       top: 0,
-      right: 0,
       bottom: 0,
-      left: 0,
-      opacity: 0.52,
-    },
-    cardGlassTop: {
-      position: "absolute",
-      top: 0,
-      left: 0,
       right: 0,
-      height: 1,
-      backgroundColor: colors.theme === "dark" ? "rgba(255,255,255,0.42)" : "rgba(255,255,255,0.7)",
     },
-    cardTopRow: {
+    profileMainRow: {
       flexDirection: "row",
-      justifyContent: "space-between",
       alignItems: "center",
       gap: 12,
     },
-    cardMeta: {
-      flex: 1,
-      color: colors.muted,
-      fontFamily: "Rubik600",
-      fontSize: 12,
-      textTransform: "uppercase",
+    avatarWrap: {
+      width: 58,
+      height: 58,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: "hidden",
+      backgroundColor: colors.surface,
     },
-    skinImageWrap: {
+    avatarImg: {
       width: "100%",
-      alignItems: "center",
-      justifyContent: "center",
-      marginVertical: 6,
+      height: "100%",
     },
-    skinImage: {
-      width: "86%",
-      resizeMode: "contain",
-      aspectRatio: 16 / 9,
+    profileInfo: {
+      flex: 1,
     },
-    skinNameText: {
-      color: colors.text,
+    profileAgentLabel: {
       fontFamily: "Rubik700",
+      fontSize: 10,
+      color: accent.gold,
+      letterSpacing: 0.5,
+    },
+    profileName: {
+      color: colors.text,
+      fontFamily: "Rubik800",
       fontSize: 20,
     },
-    bundleCard: {
+    profileTag: {
+      color: colors.muted,
+      fontFamily: "Rubik500",
+      fontSize: 13,
+    },
+    profileRankBadge: {
+      width: 48,
+      height: 48,
+      resizeMode: "contain",
+    },
+    profileDivider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginVertical: 12,
+    },
+    profileProgressRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 12,
+    },
+    profileProgressLabel: {
+      color: colors.text,
+      fontFamily: "Rubik700",
+      fontSize: 13,
+      minWidth: 80,
+    },
+    progressContainer: {
+      flex: 1,
+    },
+    bentoRow: {
+      flexDirection: "row",
+      gap: 16,
       width: "100%",
-      aspectRatio: 16 / 9,
-      borderRadius: 8,
+    },
+    walletBlock: {
+      flex: 1.2,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
       overflow: "hidden",
-      backgroundColor: colors.backgroundAlt,
+      backgroundColor: colors.glass,
+      padding: 12,
+      minHeight: 104,
+      justifyContent: "space-between",
+    },
+    bentoBlockLabel: {
+      fontFamily: "Rubik700",
+      fontSize: 11,
+      color: colors.muted,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    walletItems: {
+      gap: 6,
+    },
+    walletItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    walletVal: {
+      color: colors.text,
+      fontFamily: "Rubik800",
+      fontSize: 15,
+    },
+    wishlistBlock: {
+      flex: 1,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      overflow: "hidden",
+      backgroundColor: colors.glass,
+      padding: 12,
+      minHeight: 104,
+      justifyContent: "space-between",
+    },
+    wishlistInfo: {
+      gap: 2,
+    },
+    wishlistTitle: {
+      color: colors.text,
+      fontFamily: "Rubik800",
+      fontSize: 16,
+    },
+    wishlistSubtitle: {
+      color: colors.muted,
+      fontFamily: "Rubik500",
+      fontSize: 11,
+    },
+    bentoFullBlock: {
+      width: "100%",
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      overflow: "hidden",
+      backgroundColor: colors.glass,
+      padding: 14,
+      gap: 12,
+    },
+    blockHeaderRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-end",
+    },
+    bentoBlockTitle: {
+      fontFamily: "Rubik800",
+      fontSize: 20,
+      color: colors.text,
+    },
+    blockTimer: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+      backgroundColor: colors.surfaceStrong,
       borderWidth: 1,
       borderColor: colors.border,
     },
-    bundleImage: {
+    blockTimerText: {
+      color: colors.text,
+      fontFamily: "Rubik700",
+      fontSize: 11,
+    },
+    miniCarousel: {
+      gap: 10,
+      paddingRight: 10,
+    },
+    miniSkinCard: {
+      width: 142,
+      height: 148,
+      borderRadius: 12,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 10,
+      justifyContent: "space-between",
+    },
+    cardGradient: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      opacity: 0.38,
+    },
+    miniCardTop: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+    },
+    miniPriceWrap: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 3,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 6,
+      backgroundColor: "rgba(0,0,0,0.18)",
+      borderWidth: 1,
+      borderColor: colors.hairline,
+    },
+    miniPriceText: {
+      fontFamily: "Rubik700",
+      fontSize: 10,
+      color: colors.text,
+    },
+    miniSkinImage: {
+      width: "100%",
+      height: "46%",
+      resizeMode: "contain",
+      alignSelf: "center",
+    },
+    miniSkinName: {
+      fontFamily: "Rubik700",
+      color: colors.text,
+      fontSize: 11,
+      textAlign: "center",
+    },
+    bentoBundleBlock: {
+      width: "100%",
+      aspectRatio: 16 / 9,
+      borderRadius: 16,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      backgroundColor: colors.backgroundAlt,
+    },
+    bundleBgImage: {
       position: "absolute",
       width: "100%",
       height: "100%",
@@ -631,74 +773,75 @@ function createStyles(colors: any, accent: any) {
     },
     bundleOverlay: {
       position: "absolute",
-      top: 0,
-      right: 0,
-      bottom: 0,
       left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
     },
-    bundleContent: {
-      width: "100%",
-      height: "100%",
-      padding: 16,
-      justifyContent: "space-between",
-    },
-    bundleLabel: {
-      color: accent.green,
-      fontFamily: "Rubik700",
-      fontSize: 12,
-      textTransform: "uppercase",
-    },
-    bundleNameText: {
-      color: colors.text,
-      fontFamily: "Rubik800",
-      fontSize: 28,
-      lineHeight: 31,
-      maxWidth: "86%",
-    },
-    accessoryList: {
-      gap: 14,
-    },
-    accessoryCard: {
-      width: "100%",
-      borderRadius: 8,
-      padding: 14,
-      overflow: "hidden",
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    accessoryHeader: {
+    bundleContentRow: {
+      position: "absolute",
+      left: 14,
+      right: 14,
+      bottom: 14,
       flexDirection: "row",
-      alignItems: "center",
       justifyContent: "space-between",
+      alignItems: "flex-end",
       gap: 12,
     },
-    accessoryImageContainer: {
-      width: "100%",
-      minHeight: 120,
-      marginVertical: 10,
-      justifyContent: "center",
-      alignItems: "center",
+    bundleHeaderBlock: {
+      flex: 1,
     },
-    accessoryImage: {
-      width: "62%",
+    bundleLabel: {
+      fontFamily: "Rubik700",
+      fontSize: 10,
+      color: accent.gold,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    bundleName: {
+      fontFamily: "Rubik800",
+      fontSize: 22,
+      color: colors.text,
+    },
+    bundlePriceChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      backgroundColor: "rgba(0,0,0,0.48)",
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.12)",
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+    },
+    bundlePriceText: {
+      fontFamily: "Rubik800",
+      fontSize: 13,
+      color: colors.text,
+    },
+    miniAccessoryCard: {
+      width: 112,
+      height: 148,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      padding: 10,
+      justifyContent: "space-between",
+      alignItems: "center",
+      overflow: "hidden",
+    },
+    miniAccessoryImage: {
+      width: "80%",
+      height: "50%",
       resizeMode: "contain",
     },
-    accessoryTextPlaceholder: {
-      minHeight: 104,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    accessoryTitlePlaceholder: {
-      color: accent.green,
+    miniAccessoryName: {
       fontFamily: "Rubik700",
-      fontSize: 18,
-      textAlign: "center",
-    },
-    accessoryName: {
+      fontSize: 10,
       color: colors.text,
-      fontFamily: "Rubik700",
-      fontSize: 18,
+      textAlign: "center",
+      width: "100%",
     },
     loadingWrap: {
       flex: 1,
@@ -710,13 +853,6 @@ function createStyles(colors: any, accent: any) {
       color: colors.text,
       fontFamily: "Rubik700",
       fontSize: 18,
-    },
-    blurLayer: {
-      position: "absolute",
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0,
     },
   });
 }

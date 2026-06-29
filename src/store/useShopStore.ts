@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Skin, Bundle, AccessoryOffer } from "../types/types";
+import { Skin, Bundle, AccessoryOffer, WalletBalances } from "../types/types";
 
 interface ShopState {
   skins: Skin[];
@@ -13,8 +13,11 @@ interface ShopState {
     TimeRemaining: number;
   };
   accessoryStoreOffers: AccessoryOffer[];
+  walletBalances: WalletBalances;
   wishListSkins: Skin[];
   playerMMR: any;
+  playerCard: any;
+  matchHistory: any;
   setSkins: (skins: Skin[]) => void;
   setBundles: (bundles: Bundle[]) => void;
   setContentTiers: (contentTiers: any[]) => void;
@@ -22,6 +25,9 @@ interface ShopState {
   setFeaturedBundle: (featuredBundle: any) => void;
   setNightMarket: (nightMarket: { Offers: any[]; TimeRemaining: number }) => void;
   setAccessoryStoreOffers: (accessoryStoreOffers: AccessoryOffer[]) => void;
+  setWalletBalances: (walletBalances: WalletBalances) => void;
+  setPlayerCard: (playerCard: any) => void;
+  setMatchHistory: (matchHistory: any) => void;
   loadWishlist: () => Promise<void>;
   toggleWishlist: (skin: Skin) => Promise<boolean>;
   isInWishlist: (skin: Skin) => boolean;
@@ -38,8 +44,17 @@ export const useShopStore = create<ShopState>((set, get) => ({
     TimeRemaining: 0,
   },
   accessoryStoreOffers: [],
+  walletBalances: {
+    vp: 0,
+    kingdomCredits: 0,
+    radianite: 0,
+    freeAgents: 0,
+    raw: {},
+  },
   wishListSkins: [],
   playerMMR: null,
+  playerCard: null,
+  matchHistory: null,
 
   setSkins: (skins) => set({ skins }),
   setBundles: (bundles) => set({ bundles }),
@@ -48,6 +63,9 @@ export const useShopStore = create<ShopState>((set, get) => ({
   setFeaturedBundle: (featuredBundle) => set({ featuredBundle }),
   setNightMarket: (nightMarket) => set({ nightMarket }),
   setAccessoryStoreOffers: (accessoryStoreOffers) => set({ accessoryStoreOffers }),
+  setWalletBalances: (walletBalances) => set({ walletBalances }),
+  setPlayerCard: (playerCard) => set({ playerCard }),
+  setMatchHistory: (matchHistory) => set({ matchHistory }),
 
   loadWishlist: async () => {
     try {

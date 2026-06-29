@@ -11,6 +11,5 @@ export function useTheme() {
     colors,
     accent: Colors.accent,
     textColors: Colors.text,
-    shadows: Colors.shadow,
   };
 }

@@ -66,9 +66,4 @@ export const Colors = {
     active: "#E5B83B",
     dark: "#9E7423",
   },
-  shadow: {
-    color: "#000000",
-    softOpacity: 0.18,
-    mediumOpacity: 0.28,
-  },
 };

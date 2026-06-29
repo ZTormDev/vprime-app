@@ -1,5 +1,6 @@
 export {
   fetchStoreData,
+  getWallet,
   parseShop,
   getGameSkins,
   getBundles,
@@ -10,6 +11,7 @@ export {
   nightMarket,
   storeSkins,
   accessoryStoreOffers,
+  walletBalances,
   wishListSkins,
   addSkinToWishList,
   isInWishList,

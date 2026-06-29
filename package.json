@@ -26,7 +26,6 @@
     "axios": "^1.7.8",
     "expo": "^56.0.12",
     "expo-background-fetch": "~56.0.19",
-    "expo-blur": "~56.0.3",
     "expo-constants": "~56.0.18",
     "expo-dev-client": "~56.0.20",
     "expo-device": "~56.0.4",

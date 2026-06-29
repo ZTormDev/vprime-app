@@ -9,16 +9,15 @@ import {
   Pressable,
   Image,
   StyleSheet,
+  Platform,
 } from "react-native";
 import { useTheme } from "@/src/hooks/useTheme";
 import {
   eraseMathHistory,
   getMatchHistory,
-  MatchHistoryData,
-  PlayerMMR,
 } from "@/API/valorant-api";
+import { useShopStore } from "@/src/store/useShopStore";
 import { LinearGradient } from "expo-linear-gradient";
-import { AppBlurView } from "@/src/components/common/AppBlurView";
 import ProgressBar from "./ProgressBar";
 import { TabBarIcon } from "./navigation/TabBarIcon";
 
@@ -30,6 +29,8 @@ export const MatchHistory = ({ setShowMatchHistory }: MatchHistoryProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [detailsVisible, setDetailsVisible] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<any | null>(null);
+  const playerMMR = useShopStore((state) => state.playerMMR);
+  const matchHistory = useShopStore((state) => state.matchHistory);
 
   const { colors, theme, accent } = useTheme();
   const styles = React.useMemo(() => createStyles(colors, accent, theme), [colors, accent, theme]);
@@ -64,19 +65,8 @@ export const MatchHistory = ({ setShowMatchHistory }: MatchHistoryProps) => {
     setDetailsVisible(true);
   };
 
-  function hexToRgba(hex: any) {
-    if (typeof hex === "string" && hex.length === 8) {
-      const r = Math.min(parseInt(hex.substring(0, 2), 16) + 35, 255);
-      const g = Math.min(parseInt(hex.substring(2, 4), 16) + 35, 255);
-      const b = Math.min(parseInt(hex.substring(4, 6), 16) + 35, 255);
-      const a = parseInt(hex.substring(6, 8), 16) / 255;
-      return `rgba(${r}, ${g}, ${b}, ${a})`;
-    }
-    return accent.blue;
-  }
-
   const resultTone = (result: string) => {
-    if (result === "Victory") return accent.green;
+    if (result === "Victory") return accent.gold;
     if (result === "Draw") return colors.muted;
     return accent.red;
   };
@@ -84,66 +74,48 @@ export const MatchHistory = ({ setShowMatchHistory }: MatchHistoryProps) => {
   return (
     <View style={styles.overlay}>
       <View style={styles.sheet}>
-        <AppBlurView
-          tint={theme === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
-          intensity={72}
-          style={styles.blurLayer}
-        />
+        <View style={styles.grabber} />
+
+        {/* Header Block */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.eyebrow}>Competitive</Text>
-            <Text style={styles.title}>Career</Text>
+            <Text style={styles.eyebrow}>PERFORMANCE TERMINAL</Text>
+            <Text style={styles.title}>Match Logs</Text>
           </View>
           <TouchableOpacity
             onPress={() => setShowMatchHistory(false)}
             style={styles.iconButton}
-            activeOpacity={0.72}
+            activeOpacity={0.76}
           >
-            <TabBarIcon name="close" color={colors.text} size={22} />
+            <TabBarIcon name="close" color={colors.text} size={20} />
           </TouchableOpacity>
         </View>
 
+        {/* Competitive Status Card */}
         <View style={styles.rankCard}>
-          <AppBlurView
-            tint={theme === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
-            intensity={38}
-            style={styles.blurLayer}
-          />
-          {PlayerMMR?.Rank?.largeIcon && (
+          {playerMMR?.Rank?.largeIcon && (
             <Image
               style={styles.rankIcon}
-              source={{ uri: PlayerMMR.Rank.largeIcon }}
+              source={{ uri: playerMMR.Rank.largeIcon }}
             />
           )}
           <View style={styles.rankTextBlock}>
-            <Text
-              style={[
-                styles.rankName,
-                { color: hexToRgba(PlayerMMR?.Rank?.color) },
-              ]}
-              numberOfLines={1}
-            >
-              {PlayerMMR?.Rank?.tierName || "Unrated"}
-              {PlayerMMR?.Rank?.tier >= 24 ? " #635" : ""}
+            <Text style={[styles.rankName, { color: resultTone("Victory") }]} numberOfLines={1}>
+              {playerMMR?.Rank?.tierName || "Unrated"}
             </Text>
-            {PlayerMMR?.Rank?.tier >= 24 ? (
-              <Text style={styles.rankSubtext}>295 Rank Rating</Text>
-            ) : (
-              <ProgressBar
-                value={
-                  PlayerMMR?.LatestCompetitiveUpdate?.RankedRatingBeforeUpdate || 0
-                }
-                maxValue={100}
-                isRankBar={true}
-              />
-            )}
+            <ProgressBar
+              value={playerMMR?.LatestCompetitiveUpdate?.RankedRatingBeforeUpdate || 0}
+              maxValue={100}
+              isRankBar={true}
+            />
           </View>
         </View>
 
+        {/* Matches List */}
         {isLoading ? (
           <View style={styles.loadingWrap}>
-            <ActivityIndicator size="large" color={accent.blue} />
-            <Text style={styles.loadingText}>Loading matches</Text>
+            <ActivityIndicator size="large" color={accent.gold} />
+            <Text style={styles.loadingText}>Fetching competitive updates...</Text>
           </View>
         ) : (
           <ScrollView
@@ -151,32 +123,38 @@ export const MatchHistory = ({ setShowMatchHistory }: MatchHistoryProps) => {
             showsVerticalScrollIndicator={true}
             indicatorStyle={theme === "dark" ? "white" : "black"}
           >
-            {MatchHistoryData?.Matches?.map(
+            {matchHistory?.Matches?.map(
               (match: any, index: any) =>
                 match.Details && (
                   <TouchableOpacity
                     key={index}
-                    style={styles.matchCard}
-                    activeOpacity={0.76}
+                    style={[
+                      styles.matchCard,
+                      { borderColor: resultTone(match.Details.result) + "38" }
+                    ]}
+                    activeOpacity={0.8}
                     onPress={() => handleMatchPress(match)}
                   >
-                    <AppBlurView
-                      tint={theme === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
-                      intensity={28}
-                      style={styles.blurLayer}
-                    />
                     <Image
                       style={styles.mapImage}
                       source={{ uri: match.Details.MapDetails.listViewIcon }}
                     />
                     <LinearGradient
                       colors={[
-                        theme === "dark" ? "rgba(16,17,20,0.25)" : "rgba(248,250,252,0.25)",
-                        theme === "dark" ? "rgba(16,17,20,0.92)" : "rgba(248,250,252,0.92)",
+                        "rgba(9,10,12,0.18)",
+                        "rgba(9,10,12,0.9)"
                       ]}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
                       style={styles.mapFade}
+                    />
+
+                    {/* Victory Indicator Stripe */}
+                    <View
+                      style={[
+                        styles.indicatorStripe,
+                        { backgroundColor: resultTone(match.Details.result) }
+                      ]}
                     />
 
                     <View style={styles.matchContent}>
@@ -188,6 +166,7 @@ export const MatchHistory = ({ setShowMatchHistory }: MatchHistoryProps) => {
                           }}
                         />
                       )}
+
                       <View style={styles.matchMain}>
                         <View style={styles.resultRow}>
                           <Text
@@ -196,7 +175,7 @@ export const MatchHistory = ({ setShowMatchHistory }: MatchHistoryProps) => {
                               { color: resultTone(match.Details.result) },
                             ]}
                           >
-                            {match.Details.result}
+                            {match.Details.result === "Victory" ? "WIN" : "LOSS"}
                           </Text>
                           <Text style={styles.scoreText}>
                             {match.Details.PlayerTeamRoundsWon} -{" "}
@@ -236,29 +215,75 @@ export const MatchHistory = ({ setShowMatchHistory }: MatchHistoryProps) => {
         )}
       </View>
 
+      {/* Detail Overlay */}
       <Modal animationType="fade" transparent={true} visible={detailsVisible}>
         <View style={styles.detailOverlay}>
           <View style={styles.detailSheet}>
-            <Text style={styles.detailTitle}>Match Details</Text>
             {selectedMatch?.Details && (
-              <View style={styles.detailStats}>
-                <Text style={styles.detailText}>
-                  Result: {selectedMatch.Details.result}
-                </Text>
-                <Text style={styles.detailText}>
-                  Score: {selectedMatch.Details.PlayerTeamRoundsWon} -{" "}
-                  {selectedMatch.Details.EnemyTeamRoundsWon}
-                </Text>
-                <Text style={styles.detailText}>
-                  Combat Score: {selectedMatch.Details.Player.stats.score}
-                </Text>
-              </View>
+              <>
+                <View style={styles.detailHeader}>
+                  <View style={styles.detailIdentity}>
+                    {selectedMatch.Details.PlayerAgent?.displayIconSmall && (
+                      <Image
+                        source={{ uri: selectedMatch.Details.PlayerAgent.displayIconSmall }}
+                        style={styles.detailAgentIcon}
+                      />
+                    )}
+                    <View style={styles.detailTitleBlock}>
+                      <Text style={styles.detailEyebrow}>MATCH LOG</Text>
+                      <Text style={styles.detailTitle} numberOfLines={1}>
+                        {selectedMatch.Details.MapDetails?.displayName || "Competitive Match"}
+                      </Text>
+                    </View>
+                  </View>
+                  <View
+                    style={[
+                      styles.detailResultPill,
+                      { borderColor: resultTone(selectedMatch.Details.result) + "66" },
+                    ]}
+                  >
+                    <Text style={[styles.detailResultText, { color: resultTone(selectedMatch.Details.result) }]}>
+                      {selectedMatch.Details.result}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.detailScorePanel}>
+                  <Text style={styles.detailScore}>
+                    {selectedMatch.Details.PlayerTeamRoundsWon}
+                    <Text style={styles.detailScoreDivider}> - </Text>
+                    {selectedMatch.Details.EnemyTeamRoundsWon}
+                  </Text>
+                  <Text style={styles.detailSubtle}>
+                    {formatDate(selectedMatch.MatchStartTime)} at {formatHour(selectedMatch.MatchStartTime)}
+                  </Text>
+                </View>
+
+                <View style={styles.detailStats}>
+                  <View style={styles.detailStatCard}>
+                    <Text style={styles.detailLabel}>KILLS</Text>
+                    <Text style={styles.detailValue}>{selectedMatch.Details.Player.stats.kills}</Text>
+                  </View>
+                  <View style={styles.detailStatCard}>
+                    <Text style={styles.detailLabel}>DEATHS</Text>
+                    <Text style={styles.detailValue}>{selectedMatch.Details.Player.stats.deaths}</Text>
+                  </View>
+                  <View style={styles.detailStatCard}>
+                    <Text style={styles.detailLabel}>ASSISTS</Text>
+                    <Text style={styles.detailValue}>{selectedMatch.Details.Player.stats.assists}</Text>
+                  </View>
+                  <View style={styles.detailStatCard}>
+                    <Text style={styles.detailLabel}>SCORE</Text>
+                    <Text style={styles.detailValue}>{selectedMatch.Details.Player.stats.score}</Text>
+                  </View>
+                </View>
+              </>
             )}
             <Pressable
               style={styles.detailButton}
               onPress={() => setDetailsVisible(!detailsVisible)}
             >
-              <Text style={styles.detailButtonText}>Close</Text>
+              <Text style={styles.detailButtonText}>Dismiss Log</Text>
             </Pressable>
           </View>
         </View>
@@ -270,32 +295,35 @@ export const MatchHistory = ({ setShowMatchHistory }: MatchHistoryProps) => {
 function createStyles(colors: any, accent: any, theme: string) {
   return StyleSheet.create({
     overlay: {
-      width: "100%",
-      height: "100%",
       zIndex: 10,
       position: "absolute",
-      top: 0,
+      top: Platform.OS === "ios" ? 112 : 94,
       left: 0,
-      backgroundColor: "rgba(0,0,0,0.55)",
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0,0,0,0.6)",
       justifyContent: "flex-end",
     },
     sheet: {
-      height: "92%",
+      height: "100%",
       backgroundColor: theme === "dark" ? "rgba(16,17,20,0.96)" : "rgba(248,250,252,0.96)",
-      borderTopLeftRadius: 8,
-      borderTopRightRadius: 8,
+      borderTopLeftRadius: 18,
+      borderTopRightRadius: 18,
       borderWidth: 1,
       borderColor: colors.glassBorder,
       padding: 16,
-      gap: 14,
+      paddingTop: 20,
+      gap: 16,
       overflow: "hidden",
     },
-    blurLayer: {
+    grabber: {
       position: "absolute",
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0,
+      top: 8,
+      alignSelf: "center",
+      width: 40,
+      height: 4,
+      borderRadius: 4,
+      backgroundColor: theme === "dark" ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.15)",
     },
     header: {
       flexDirection: "row",
@@ -303,26 +331,27 @@ function createStyles(colors: any, accent: any, theme: string) {
       alignItems: "center",
     },
     eyebrow: {
-      color: accent.blue,
-      fontSize: 12,
+      color: accent.gold,
+      fontSize: 11,
       fontFamily: "Rubik700",
       textTransform: "uppercase",
+      letterSpacing: 0.5,
     },
     title: {
       color: colors.text,
-      fontSize: 30,
+      fontSize: 26,
       fontFamily: "Rubik800",
     },
     iconButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 8,
+      width: 38,
+      height: 38,
+      borderRadius: 10,
       justifyContent: "center",
       alignItems: "center",
       backgroundColor: colors.surfaceStrong,
     },
     rankCard: {
-      borderRadius: 8,
+      borderRadius: 16,
       overflow: "hidden",
       borderWidth: 1,
       borderColor: colors.glassBorder,
@@ -333,22 +362,17 @@ function createStyles(colors: any, accent: any, theme: string) {
       gap: 14,
     },
     rankIcon: {
-      width: 70,
-      height: 70,
+      width: 58,
+      height: 58,
       resizeMode: "contain",
     },
     rankTextBlock: {
       flex: 1,
-      gap: 6,
+      gap: 4,
     },
     rankName: {
-      fontSize: 21,
+      fontSize: 18,
       fontFamily: "Rubik800",
-    },
-    rankSubtext: {
-      fontFamily: "Rubik600",
-      fontSize: 14,
-      color: colors.muted,
     },
     loadingWrap: {
       flex: 1,
@@ -359,26 +383,26 @@ function createStyles(colors: any, accent: any, theme: string) {
     loadingText: {
       color: colors.muted,
       fontFamily: "Rubik600",
-      fontSize: 15,
+      fontSize: 14,
     },
     matchList: {
-      gap: 12,
-      paddingBottom: 18,
+      gap: 14,
+      paddingBottom: Platform.OS === "ios" ? 40 : 20,
     },
     matchCard: {
-      minHeight: 96,
-      borderRadius: 8,
+      minHeight: 88,
+      borderRadius: 16,
       overflow: "hidden",
       borderWidth: 1,
-      borderColor: colors.glassBorder,
       backgroundColor: colors.glass,
+      flexDirection: "row",
     },
     mapImage: {
       position: "absolute",
       width: "100%",
       height: "100%",
       resizeMode: "cover",
-      opacity: 0.62,
+      opacity: 0.28,
     },
     mapFade: {
       position: "absolute",
@@ -387,17 +411,24 @@ function createStyles(colors: any, accent: any, theme: string) {
       right: 0,
       bottom: 0,
     },
+    indicatorStripe: {
+      width: 5,
+      height: "100%",
+    },
     matchContent: {
-      minHeight: 96,
+      flex: 1,
       flexDirection: "row",
       alignItems: "center",
-      padding: 10,
+      padding: 12,
       gap: 10,
     },
     agentIcon: {
-      width: 76,
-      height: 76,
-      resizeMode: "contain",
+      width: 54,
+      height: 54,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: "rgba(0,0,0,0.14)",
     },
     matchMain: {
       flex: 1,
@@ -406,34 +437,33 @@ function createStyles(colors: any, accent: any, theme: string) {
     resultRow: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 8,
+      gap: 6,
     },
     resultText: {
-      fontSize: 19,
+      fontSize: 16,
       fontFamily: "Rubik800",
-      textTransform: "uppercase",
     },
     scoreText: {
       color: colors.text,
-      fontSize: 18,
+      fontSize: 14,
       fontFamily: "Rubik700",
     },
     kdaText: {
       color: colors.muted,
-      fontSize: 13,
+      fontSize: 12,
       fontFamily: "Rubik600",
     },
     matchRight: {
       alignItems: "flex-end",
-      gap: 2,
+      gap: 1,
     },
     rrText: {
       fontFamily: "Rubik800",
-      fontSize: 16,
+      fontSize: 15,
     },
     dateText: {
       color: colors.muted,
-      fontSize: 11,
+      fontSize: 10,
       fontFamily: "Rubik500",
     },
     detailOverlay: {
@@ -442,31 +472,112 @@ function createStyles(colors: any, accent: any, theme: string) {
       justifyContent: "center",
       alignItems: "center",
       backgroundColor: "rgba(0,0,0,0.58)",
-      padding: 24,
+      padding: 18,
     },
     detailSheet: {
       width: "100%",
+      backgroundColor: theme === "dark" ? "rgba(16,17,20,0.94)" : "rgba(248,250,252,0.94)",
+      borderWidth: 1,
+      borderRadius: 18,
+      borderColor: colors.glassBorder,
+      padding: 18,
+      gap: 14,
+      overflow: "hidden",
+    },
+    detailHeader: {
+      flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      backgroundColor: colors.background,
+      gap: 12,
+    },
+    detailIdentity: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    detailAgentIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: 10,
       borderWidth: 1,
-      borderRadius: 8,
       borderColor: colors.border,
-      padding: 18,
-      gap: 18,
+      backgroundColor: "rgba(0,0,0,0.14)",
+    },
+    detailTitleBlock: {
+      flex: 1,
+    },
+    detailEyebrow: {
+      color: accent.gold,
+      fontFamily: "Rubik700",
+      fontSize: 10,
+      letterSpacing: 0.5,
     },
     detailTitle: {
       color: colors.text,
       fontFamily: "Rubik800",
-      fontSize: 24,
+      fontSize: 20,
+    },
+    detailResultPill: {
+      borderWidth: 1,
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      backgroundColor: colors.surface,
+    },
+    detailResultText: {
+      fontFamily: "Rubik800",
+      fontSize: 12,
+    },
+    detailScorePanel: {
+      minHeight: 86,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 4,
+    },
+    detailScore: {
+      color: colors.text,
+      fontFamily: "Rubik800",
+      fontSize: 34,
+    },
+    detailScoreDivider: {
+      color: colors.muted,
+    },
+    detailSubtle: {
+      color: colors.muted,
+      fontFamily: "Rubik600",
+      fontSize: 12,
     },
     detailStats: {
       width: "100%",
-      gap: 8,
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 12,
     },
-    detailText: {
+    detailStatCard: {
+      width: "47%",
+      minHeight: 62,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 3,
+    },
+    detailLabel: {
       color: colors.muted,
-      fontFamily: "Rubik600",
+      fontFamily: "Rubik700",
+      fontSize: 11,
+      letterSpacing: 0.5,
+    },
+    detailValue: {
+      color: colors.text,
+      fontFamily: "Rubik800",
       fontSize: 15,
     },
     detailButton: {
@@ -474,13 +585,13 @@ function createStyles(colors: any, accent: any, theme: string) {
       width: "100%",
       justifyContent: "center",
       alignItems: "center",
-      minHeight: 46,
-      borderRadius: 8,
+      height: 44,
+      borderRadius: 12,
     },
     detailButtonText: {
       color: colors.background,
       fontFamily: "Rubik800",
-      fontSize: 16,
+      fontSize: 14,
     },
   });
 }

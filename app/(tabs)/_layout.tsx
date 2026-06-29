@@ -1,7 +1,6 @@
 import { Tabs } from "expo-router";
 import React from "react";
 import { Platform, StyleSheet, Text, View, TouchableOpacity } from "react-native";
-import { AppBlurView } from "@/src/components/common/AppBlurView";
 import { TabBarIcon } from "@/components/navigation/TabBarIcon";
 import { useTheme } from "@/src/hooks/useTheme";
 
@@ -11,11 +10,6 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 
   return (
     <View style={styles.tabBarContainer}>
-      <AppBlurView
-        tint={theme === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
-        intensity={72}
-        style={StyleSheet.absoluteFill}
-      />
       {state.routes.map((route: any, index: number) => {
         const isFocused = state.index === index;
 
@@ -75,7 +69,7 @@ export default function TabLayout() {
   return (
     <Tabs
       initialRouteName="store"
-      tabBar={(props) => <CustomTabBar {...props} />}
+      tabBar={() => null}
       screenOptions={{
         headerShown: false,
       }}
@@ -102,11 +96,6 @@ function createStyles(colors: any) {
       borderColor: colors.border,
       borderRadius: 26,
       paddingBottom: Platform.OS === "android" ? 0 : 4,
-      shadowColor: "#000000",
-      shadowOpacity: 0.28,
-      shadowRadius: 24,
-      shadowOffset: { width: 0, height: 10 },
-      elevation: 18,
     },
     tabItem: {
       flex: 1,

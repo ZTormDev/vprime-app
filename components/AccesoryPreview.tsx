@@ -8,12 +8,12 @@ import {
   Image,
   Modal,
   Pressable,
+  Platform,
 } from "react-native";
 import { TabBarIcon } from "./navigation/TabBarIcon";
 import CurrencyIcon from "./CurrencyIcon";
 import { useTheme } from "@/src/hooks/useTheme";
 import { LinearGradient } from "expo-linear-gradient";
-import { AppBlurView } from "@/src/components/common/AppBlurView";
 
 type AccessoryPreviewProps = {
   selectedAccessory: any;
@@ -45,30 +45,26 @@ export const AccessoryPreview = ({
   return (
     <View style={styles.overlay}>
       <View style={styles.sheet}>
-        <AppBlurView
-          tint={theme === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
-          intensity={78}
-          style={styles.blurLayer}
-        />
         {currentImagePreview && (
           <Image
             source={{ uri: currentImagePreview }}
-            blurRadius={24}
             style={styles.sheetBackdropImage}
+            blurRadius={6}
           />
         )}
         <LinearGradient
           colors={[
-            theme === "dark" ? "rgba(16,17,20,0.84)" : "rgba(248,250,252,0.84)",
-            theme === "dark" ? "rgba(16,17,20,0.72)" : "rgba(248,250,252,0.72)",
-            theme === "dark" ? "rgba(16,17,20,0.94)" : "rgba(248,250,252,0.94)",
+            theme === "dark" ? "rgba(9,10,12,0.85)" : "rgba(248,250,252,0.85)",
+            theme === "dark" ? "rgba(9,10,12,0.92)" : "rgba(248,250,252,0.92)",
           ]}
           style={styles.sheetBackdropTint}
         />
+
+        {/* Header Block */}
         <View style={styles.header}>
           <View style={styles.titleBlock}>
             <Text style={styles.eyebrow}>
-              {selectedAccessory.itemType || selectedAccessory.TierName || "Accessory"}
+              {selectedAccessory.itemType || "Accessory Offer"}
             </Text>
             <Text style={styles.title} numberOfLines={2}>
               {selectedAccessory.displayName}
@@ -76,12 +72,13 @@ export const AccessoryPreview = ({
           </View>
           {price && (
             <View style={styles.priceChip}>
-              <CurrencyIcon icon="kdc" size={18} />
+              <CurrencyIcon icon="kdc" size={16} />
               <Text style={styles.priceText}>{price}</Text>
             </View>
           )}
         </View>
 
+        {/* Dynamic Aspect Ratio Preview Window */}
         <View style={styles.previewWrap}>
           {currentImagePreview ? (
             <Image
@@ -90,46 +87,28 @@ export const AccessoryPreview = ({
                 styles.previewImage,
                 {
                   aspectRatio:
-                    selectedAccessory.itemType === "Player Card" ? 3 / 4 : 4 / 3,
+                    selectedAccessory.itemType === "Player Card" ? 3 / 4 : 1,
+                  height:
+                    selectedAccessory.itemType === "Player Card" ? 220 : 160,
                 },
               ]}
             />
           ) : (
             <View style={styles.emptyMedia}>
-              <TabBarIcon name="image-outline" color={colors.subtle} size={30} />
-              <Text style={styles.emptyMediaText}>No image found for this accessory.</Text>
+              <TabBarIcon name="image-outline" color={colors.subtle} size={28} />
+              <Text style={styles.emptyMediaText}>Preview unavailable.</Text>
             </View>
           )}
         </View>
 
+        {/* Actions Panel */}
         <View style={styles.actions}>
           <TouchableOpacity
-            onPress={() => {
-              addSkinToWishList(selectedAccessory);
-              handleWishlistPress(selectedAccessory);
-            }}
-            activeOpacity={0.74}
-            style={[
-              styles.secondaryButton,
-              inWishlist && styles.secondaryButtonActive,
-            ]}
-          >
-            <TabBarIcon
-              name={!inWishlist ? "heart-outline" : "heart"}
-              color={accent.red}
-              size={22}
-            />
-            <Text style={styles.secondaryButtonText}>
-              {!inWishlist ? "Add To Wishlist" : "Remove from Wishlist"}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
             onPress={() => setSelectedAccessory(null)}
-            activeOpacity={0.74}
+            activeOpacity={0.8}
             style={styles.primaryButton}
           >
-            <Text style={styles.primaryButtonText}>Close</Text>
+            <Text style={styles.primaryButtonText}>Dismiss</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -137,7 +116,7 @@ export const AccessoryPreview = ({
       <Modal animationType="fade" transparent={true} visible={modalVisible}>
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
-            <Text style={styles.modalText}>Accessory preview not found.</Text>
+            <Text style={styles.modalText}>Accessory metadata not found.</Text>
             <Pressable
               style={styles.modalButton}
               onPress={() => setModalVisible(!modalVisible)}
@@ -154,52 +133,38 @@ export const AccessoryPreview = ({
 function createStyles(colors: any, accent: any, theme: string) {
   return StyleSheet.create({
     overlay: {
-      backgroundColor: "rgba(0,0,0,0.68)",
+      backgroundColor: "rgba(0,0,0,0.65)",
       position: "absolute",
       top: 0,
       left: 0,
       right: 0,
       bottom: 0,
-      justifyContent: "center",
-      alignItems: "center",
+      justifyContent: "flex-end",
       zIndex: 10,
-      padding: 16,
     },
     sheet: {
       overflow: "hidden",
-      backgroundColor: theme === "dark" ? "rgba(16,17,20,0.88)" : "rgba(248,250,252,0.88)",
+      backgroundColor: theme === "dark" ? "rgba(16,17,20,0.92)" : "rgba(248,250,252,0.92)",
       zIndex: 11,
       width: "100%",
-      maxHeight: "92%",
-      justifyContent: "center",
-      padding: 16,
-      borderRadius: 8,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
       borderWidth: 1,
       borderColor: colors.glassBorder,
-      gap: 14,
-      shadowColor: "#000000",
-      shadowOpacity: 0.2,
-      shadowRadius: 26,
-      shadowOffset: { width: 0, height: 16 },
-      elevation: 20,
+      padding: 20,
+      paddingBottom: Platform.OS === "ios" ? 40 : 24,
+      gap: 16,
     },
     sheetBackdropImage: {
       position: "absolute",
-      width: "130%",
-      height: "130%",
-      left: "-15%",
-      top: "-15%",
-      resizeMode: "contain",
-      opacity: 0.24,
+      width: "120%",
+      height: "120%",
+      right: "-10%",
+      bottom: "-10%",
+      opacity: 0.18,
+      resizeMode: "cover",
     },
     sheetBackdropTint: {
-      position: "absolute",
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0,
-    },
-    blurLayer: {
       position: "absolute",
       top: 0,
       right: 0,
@@ -218,44 +183,45 @@ function createStyles(colors: any, accent: any, theme: string) {
     },
     eyebrow: {
       fontFamily: "Rubik700",
-      color: accent.blue,
-      fontSize: 12,
+      color: accent.gold,
+      fontSize: 11,
       textTransform: "uppercase",
+      letterSpacing: 0.5,
     },
     title: {
       fontFamily: "Rubik800",
       color: colors.text,
-      fontSize: 25,
-      lineHeight: 29,
+      fontSize: 22,
+      lineHeight: 26,
     },
     priceChip: {
-      minHeight: 32,
+      height: 32,
       paddingHorizontal: 10,
-      borderRadius: 8,
+      borderRadius: 10,
       flexDirection: "row",
       alignItems: "center",
-      gap: 5,
-      backgroundColor: colors.glass,
+      gap: 4,
+      backgroundColor: colors.surfaceStrong,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
+      borderColor: colors.border,
     },
     priceText: {
       color: colors.text,
-      fontSize: 15,
+      fontSize: 14,
       fontFamily: "Rubik700",
     },
     previewWrap: {
-      borderRadius: 8,
+      borderRadius: 14,
       overflow: "hidden",
       borderWidth: 1,
       borderColor: colors.glassBorder,
-      backgroundColor: "rgba(0,0,0,0.24)",
+      backgroundColor: "rgba(0,0,0,0.18)",
       justifyContent: "center",
       alignItems: "center",
-      minHeight: 260,
+      minHeight: 240,
+      padding: 12,
     },
     previewImage: {
-      width: "100%",
       resizeMode: "contain",
     },
     emptyMedia: {
@@ -267,40 +233,18 @@ function createStyles(colors: any, accent: any, theme: string) {
     },
     emptyMediaText: {
       color: colors.muted,
-      fontSize: 16,
-      fontFamily: "Rubik500",
+      fontSize: 14,
+      fontFamily: "Rubik600",
       textAlign: "center",
     },
     actions: {
       width: "100%",
       gap: 10,
     },
-    secondaryButton: {
-      minHeight: 48,
-      borderWidth: 1,
-      borderColor: "rgba(255,77,97,0.32)",
-      backgroundColor: "transparent",
-      borderRadius: 8,
-      paddingHorizontal: 14,
-      width: "100%",
-      justifyContent: "center",
-      alignItems: "center",
-      flexDirection: "row",
-      gap: 8,
-    },
-    secondaryButtonActive: {
-      backgroundColor: accent.ultraDarkRed,
-    },
-    secondaryButtonText: {
-      fontFamily: "Rubik700",
-      color: accent.red,
-      fontSize: 16,
-      textAlign: "center",
-    },
     primaryButton: {
       backgroundColor: colors.text,
-      borderRadius: 8,
-      minHeight: 48,
+      borderRadius: 12,
+      height: 48,
       width: "100%",
       justifyContent: "center",
       alignItems: "center",
@@ -308,8 +252,7 @@ function createStyles(colors: any, accent: any, theme: string) {
     primaryButtonText: {
       fontFamily: "Rubik800",
       color: colors.background,
-      fontSize: 16,
-      textAlign: "center",
+      fontSize: 14,
     },
     centeredView: {
       flex: 1,
@@ -320,8 +263,8 @@ function createStyles(colors: any, accent: any, theme: string) {
     },
     modalView: {
       backgroundColor: colors.background,
-      borderRadius: 8,
-      padding: 16,
+      borderRadius: 16,
+      padding: 20,
       alignItems: "center",
       width: "100%",
       borderWidth: 1,
@@ -329,8 +272,8 @@ function createStyles(colors: any, accent: any, theme: string) {
       gap: 16,
     },
     modalButton: {
-      borderRadius: 8,
-      minHeight: 44,
+      borderRadius: 12,
+      height: 44,
       width: "100%",
       justifyContent: "center",
       alignItems: "center",
@@ -339,14 +282,13 @@ function createStyles(colors: any, accent: any, theme: string) {
     modalButtonText: {
       color: colors.background,
       fontFamily: "Rubik800",
-      textAlign: "center",
-      fontSize: 16,
+      fontSize: 14,
     },
     modalText: {
       color: colors.text,
       fontFamily: "Rubik600",
       textAlign: "center",
-      fontSize: 17,
+      fontSize: 15,
     },
   });
 }

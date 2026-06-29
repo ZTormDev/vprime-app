@@ -2,8 +2,8 @@ import * as BackgroundFetch from "expo-background-fetch";
 import * as TaskManager from "expo-task-manager";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
-import axios from "axios";
 import { pushNotification } from "../../API/notifications-api";
+import { ValorantApiService } from "../../API/valorant-api";
 
 export const BACKGROUND_WISHLIST_CHECK = "BACKGROUND_WISHLIST_CHECK";
 
@@ -52,49 +52,18 @@ export async function runWishlistStorefrontCheckOnce(
 
   const wishListSkins = storageWishlist ? JSON.parse(storageWishlist) : [];
 
-  const entitlementsRes = await axios.post(
-    "https://entitlements.auth.riotgames.com/api/token/v1",
-    {},
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
-  const entitlementsToken = entitlementsRes.data.entitlements_token;
+  const [entitlementsToken, clientVersion] = await Promise.all([
+    ValorantApiService.fetchEntitlementsToken(accessToken),
+    ValorantApiService.fetchClientVersion(),
+  ]);
 
-  let clientVersion = "release-09.00-shipping-13-2559641";
-  try {
-    const versionRes = await axios.get("https://valorant-api.com/v1/version");
-    clientVersion = versionRes.data.data.riotClientVersion;
-  } catch (versionErr) {
-    console.warn("[Background Fetch] Failed to fetch live client version, using default:", versionErr);
-  }
-
-  const clientPlatform = btoa(
-    JSON.stringify({
-      platformType: "PC",
-      platformOS: "Windows",
-      platformOSVersion: "10.0.19042.1.256.64bit",
-      platformChipset: "Unknown",
-    })
-  );
-
-  const storeRes = await axios.request({
-    url: `https://pd.${shard}.a.pvp.net/store/v3/storefront/${playerUUID}`,
-    method: "POST",
-    headers: {
-      "X-Riot-ClientVersion": clientVersion,
-      "X-Riot-ClientPlatform": clientPlatform,
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
-      "X-Riot-Entitlements-JWT": entitlementsToken,
-    },
-    data: {},
+  const storefront = await ValorantApiService.fetchStorefront({
+    shard,
+    playerUuid: playerUUID,
+    accessToken,
+    entitlementsToken,
+    clientVersion,
   });
-
-  const storefront = storeRes.data;
   if (
     !storefront.SkinsPanelLayout ||
     !storefront.SkinsPanelLayout.SingleItemStoreOffers

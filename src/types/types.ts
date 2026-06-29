@@ -59,8 +59,16 @@ export interface AccessoryOffer {
   displayName: string;
   displayIcon: string;
   Cost: string;
-  itemType: 'Buddy' | 'Spray' | 'Player Card' | 'Player Title';
+  itemType: 'Buddy' | 'Spray' | 'Player Card' | 'Player Title' | 'Accessory';
   originalItem: any;
+}
+
+export interface WalletBalances {
+  vp: number;
+  kingdomCredits: number;
+  radianite: number;
+  freeAgents: number;
+  raw?: Record<string, number>;
 }
 
 export interface PlayerMMR {

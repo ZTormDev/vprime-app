@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import CurrencyIcon from "./CurrencyIcon";
 import { LinearGradient } from "expo-linear-gradient";
-import { AppBlurView } from "@/src/components/common/AppBlurView";
 import { isInWishList } from "@/API/valorant-api";
 import { SkinPreview } from "./SkinPreview";
 import { TabBarIcon } from "./navigation/TabBarIcon";
@@ -32,12 +31,7 @@ function BundleStat({
   const { colors, theme, accent } = useTheme();
   return (
     <View style={styles.statCard}>
-      <AppBlurView
-        tint={theme === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
-        intensity={32}
-        style={styles.blurLayer}
-      />
-      <TabBarIcon name={icon} color={accent.blue} size={20} />
+      <TabBarIcon name={icon} color={accent.gold} size={18} />
       <View style={styles.statTextBlock}>
         <Text style={[styles.statLabel, { color: colors.subtle }]}>{label}</Text>
         <Text style={[styles.statValue, { color: colors.text }]} numberOfLines={1}>
@@ -78,11 +72,6 @@ export const BundlePreview = ({
   return (
     <View style={styles.overlay}>
       <View style={styles.sheet}>
-        <AppBlurView
-          tint={theme === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
-          intensity={72}
-          style={styles.blurLayer}
-        />
         <View style={styles.grabber} />
 
         <View style={styles.hero}>
@@ -90,31 +79,31 @@ export const BundlePreview = ({
             <Image
               source={{ uri: bundleData.displayIcon }}
               style={styles.heroImage}
+              blurRadius={3}
             />
           )}
           <LinearGradient
             colors={[
-              theme === "dark" ? "rgba(16,17,20,0.08)" : "rgba(248,250,252,0.08)",
-              theme === "dark" ? "rgba(16,17,20,0.42)" : "rgba(248,250,252,0.42)",
-              theme === "dark" ? "rgba(16,17,20,0.96)" : "rgba(248,250,252,0.96)",
+              "rgba(9,10,12,0.1)",
+              "rgba(9,10,12,0.88)"
             ]}
             style={styles.heroOverlay}
           />
           <TouchableOpacity
             onPress={() => setSelectedBundle(null)}
-            activeOpacity={0.74}
+            activeOpacity={0.76}
             style={styles.closeIconButton}
           >
-            <TabBarIcon name="close" color={colors.text} size={22} />
+            <TabBarIcon name="close" color={colors.text} size={20} />
           </TouchableOpacity>
 
           <View style={styles.heroContent}>
-            <Text style={styles.eyebrow}>Featured Bundle</Text>
+            <Text style={styles.eyebrow}>Featured Collection</Text>
             <Text style={styles.title} numberOfLines={2}>
               {bundleData.displayName}
             </Text>
             <View style={styles.priceChip}>
-              <CurrencyIcon icon="vp" size={18} />
+              <CurrencyIcon icon="vp" size={16} />
               <Text style={styles.priceText}>{bundleData.bundlePrice}</Text>
             </View>
           </View>
@@ -128,39 +117,31 @@ export const BundlePreview = ({
         >
           <View style={styles.statsRow}>
             <BundleStat
-              label="Items"
+              label="ITEMS INCLUDED"
               value={bundleData.bundleItems?.length || 0}
               icon="albums-outline"
             />
-            <BundleStat label="Type" value="Collection" icon="sparkles-outline" />
+            <BundleStat label="CATALOG TYPE" value="Limited Bundle" icon="sparkles-outline" />
           </View>
 
           <View style={styles.sectionHeader}>
             <View>
-              <Text style={styles.sectionEyebrow}>Preview</Text>
-              <Text style={styles.sectionTitle}>Bundle Items</Text>
+              <Text style={styles.sectionEyebrow}>CONTENTS</Text>
+              <Text style={styles.sectionTitle}>Weapon & Gear items</Text>
             </View>
-            <Text style={styles.sectionCount}>
-              {bundleData.bundleItems?.length || 0}
-            </Text>
           </View>
 
           {bundleData.bundleItems.map((item: any) => (
             <TouchableOpacity
               key={item.uuid}
-              activeOpacity={0.76}
+              activeOpacity={0.8}
               onPress={() => showSkinPanel(true, item)}
               style={styles.itemCard}
             >
-              <AppBlurView
-                tint={theme === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
-                intensity={34}
-                style={styles.blurLayer}
-              />
               <LinearGradient
                 colors={[
-                  theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)",
-                  item.TierColor || accent.blueSoft,
+                  theme === "dark" ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
+                  item.TierColor || accent.goldSoft,
                 ]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -168,10 +149,10 @@ export const BundlePreview = ({
               />
               <View style={styles.itemHeader}>
                 <Text style={styles.itemMeta} numberOfLines={1}>
-                  {item.TierName || "Bundle Item"}
+                  {item.TierName || "Gear Item"}
                 </Text>
                 <View style={styles.smallPriceChip}>
-                  <CurrencyIcon icon="vp" size={16} />
+                  <CurrencyIcon icon="vp" size={13} />
                   <Text style={styles.smallPriceText}>{item.Cost}</Text>
                 </View>
               </View>
@@ -182,22 +163,21 @@ export const BundlePreview = ({
               />
 
               <View style={styles.itemFooter}>
-                <Text style={styles.itemName} numberOfLines={2}>
+                <Text style={styles.itemName} numberOfLines={1}>
                   {item.displayName}
                 </Text>
                 <View style={styles.openPill}>
-                  <Text style={styles.openPillText}>Open</Text>
+                  <Text style={styles.openPillText}>Inspect</Text>
                   <TabBarIcon
                     name="chevron-forward"
                     color={colors.text}
-                    size={15}
+                    size={14}
                   />
                 </View>
               </View>
             </TouchableOpacity>
           ))}
         </ScrollView>
-
       </View>
 
       {selectedSkin && (
@@ -217,31 +197,25 @@ export const BundlePreview = ({
 const styles = StyleSheet.create({
   statCard: {
     flex: 1,
-    minHeight: 64,
-    borderRadius: 8,
+    minHeight: 58,
+    borderRadius: 14,
     overflow: "hidden",
-    padding: 10,
+    padding: 12,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-  },
-  blurLayer: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
+    gap: 8,
   },
   statTextBlock: {
     flex: 1,
   },
   statLabel: {
-    fontFamily: "Rubik600",
-    fontSize: 12,
+    fontFamily: "Rubik700",
+    fontSize: 10,
+    letterSpacing: 0.3,
   },
   statValue: {
     fontFamily: "Rubik800",
-    fontSize: 17,
+    fontSize: 15,
   },
 });
 
@@ -255,14 +229,14 @@ function createStyles(colors: any, accent: any, theme: string) {
       left: 0,
       zIndex: 9,
       justifyContent: "flex-end",
-      backgroundColor: "rgba(0,0,0,0.58)",
+      backgroundColor: "rgba(0,0,0,0.6)",
     },
     sheet: {
       height: "94%",
       width: "100%",
       overflow: "hidden",
-      borderTopLeftRadius: 8,
-      borderTopRightRadius: 8,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
       backgroundColor: theme === "dark" ? "rgba(16,17,20,0.96)" : "rgba(248,250,252,0.96)",
       borderWidth: 1,
       borderColor: colors.glassBorder,
@@ -271,22 +245,15 @@ function createStyles(colors: any, accent: any, theme: string) {
       position: "absolute",
       top: 8,
       alignSelf: "center",
-      width: 44,
-      height: 5,
-      borderRadius: 8,
-      backgroundColor: colors.theme === "dark" ? "rgba(255,255,255,0.36)" : "rgba(0,0,0,0.2)",
+      width: 40,
+      height: 4,
+      borderRadius: 4,
+      backgroundColor: theme === "dark" ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.15)",
       zIndex: 20,
-    },
-    blurLayer: {
-      position: "absolute",
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0,
     },
     hero: {
       width: "100%",
-      minHeight: 270,
+      minHeight: 250,
       justifyContent: "flex-end",
       backgroundColor: colors.backgroundAlt,
     },
@@ -305,51 +272,52 @@ function createStyles(colors: any, accent: any, theme: string) {
     },
     closeIconButton: {
       position: "absolute",
-      top: 18,
+      top: 16,
       right: 16,
-      width: 42,
-      height: 42,
-      borderRadius: 8,
+      width: 38,
+      height: 38,
+      borderRadius: 10,
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: theme === "dark" ? "rgba(16,17,20,0.72)" : "rgba(255,255,255,0.72)",
+      backgroundColor: theme === "dark" ? "rgba(16,17,20,0.78)" : "rgba(255,255,255,0.78)",
       borderWidth: 1,
       borderColor: colors.border,
       zIndex: 21,
     },
     heroContent: {
       padding: 16,
-      gap: 8,
+      gap: 6,
     },
     eyebrow: {
-      fontSize: 12,
-      color: accent.green,
+      fontSize: 11,
+      color: accent.gold,
       fontFamily: "Rubik700",
       textTransform: "uppercase",
+      letterSpacing: 0.5,
     },
     title: {
-      fontSize: 32,
-      lineHeight: 36,
+      fontSize: 26,
+      lineHeight: 30,
       color: colors.text,
       fontFamily: "Rubik800",
       maxWidth: "90%",
     },
     priceChip: {
       alignSelf: "flex-start",
-      minHeight: 36,
-      paddingHorizontal: 12,
-      borderRadius: 8,
+      height: 32,
+      paddingHorizontal: 10,
+      borderRadius: 10,
       flexDirection: "row",
       alignItems: "center",
-      gap: 6,
-      backgroundColor: theme === "dark" ? "rgba(0,0,0,0.32)" : "rgba(255,255,255,0.8)",
+      gap: 4,
+      backgroundColor: "rgba(0,0,0,0.38)",
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: "rgba(255,255,255,0.12)",
     },
     priceText: {
       fontFamily: "Rubik800",
       color: colors.text,
-      fontSize: 16,
+      fontSize: 14,
     },
     scroll: {
       width: "100%",
@@ -357,40 +325,33 @@ function createStyles(colors: any, accent: any, theme: string) {
     },
     scrollContent: {
       padding: 16,
-      paddingBottom: 28,
-      gap: 14,
+      paddingBottom: 40,
+      gap: 16,
     },
     statsRow: {
       flexDirection: "row",
-      gap: 10,
+      gap: 12,
     },
     sectionHeader: {
-      flexDirection: "row",
-      alignItems: "flex-end",
-      justifyContent: "space-between",
       marginTop: 2,
     },
     sectionEyebrow: {
-      color: colors.subtle,
-      fontFamily: "Rubik600",
-      fontSize: 12,
+      color: colors.muted,
+      fontFamily: "Rubik700",
+      fontSize: 10,
+      letterSpacing: 0.5,
     },
     sectionTitle: {
       color: colors.text,
       fontFamily: "Rubik800",
-      fontSize: 23,
-    },
-    sectionCount: {
-      color: colors.muted,
-      fontFamily: "Rubik700",
-      fontSize: 15,
+      fontSize: 20,
     },
     itemCard: {
       width: "100%",
-      minHeight: 190,
+      minHeight: 174,
       borderWidth: 1,
       borderColor: colors.glassBorder,
-      borderRadius: 8,
+      borderRadius: 16,
       overflow: "hidden",
       padding: 14,
       backgroundColor: colors.glass,
@@ -401,7 +362,7 @@ function createStyles(colors: any, accent: any, theme: string) {
       right: 0,
       bottom: 0,
       left: 0,
-      opacity: 0.44,
+      opacity: 0.38,
     },
     itemHeader: {
       flexDirection: "row",
@@ -412,36 +373,37 @@ function createStyles(colors: any, accent: any, theme: string) {
     itemMeta: {
       flex: 1,
       color: colors.muted,
-      fontFamily: "Rubik600",
-      fontSize: 12,
+      fontFamily: "Rubik700",
+      fontSize: 10,
       textTransform: "uppercase",
+      letterSpacing: 0.3,
     },
     smallPriceChip: {
-      minHeight: 30,
-      paddingHorizontal: 10,
-      borderRadius: 8,
+      height: 26,
+      paddingHorizontal: 8,
+      borderRadius: 6,
       flexDirection: "row",
       alignItems: "center",
-      gap: 5,
-      backgroundColor: theme === "dark" ? "rgba(0,0,0,0.24)" : "rgba(255,255,255,0.7)",
+      gap: 3,
+      backgroundColor: theme === "dark" ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.7)",
       borderWidth: 1,
       borderColor: colors.hairline,
     },
     smallPriceText: {
       fontFamily: "Rubik700",
       color: colors.text,
-      fontSize: 14,
+      fontSize: 11,
     },
     itemImage: {
-      width: "86%",
+      width: "80%",
       resizeMode: "contain",
       aspectRatio: 16 / 9,
       alignSelf: "center",
-      marginVertical: 7,
+      marginVertical: 4,
     },
     itemFooter: {
       flexDirection: "row",
-      alignItems: "flex-end",
+      alignItems: "center",
       justifyContent: "space-between",
       gap: 12,
     },
@@ -449,24 +411,24 @@ function createStyles(colors: any, accent: any, theme: string) {
       flex: 1,
       fontFamily: "Rubik800",
       color: colors.text,
-      fontSize: 20,
+      fontSize: 16,
     },
     openPill: {
-      minHeight: 30,
-      paddingLeft: 10,
-      paddingRight: 8,
+      height: 28,
+      paddingLeft: 8,
+      paddingRight: 6,
       borderRadius: 8,
       flexDirection: "row",
       alignItems: "center",
       gap: 2,
       backgroundColor: colors.surface,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
+      borderColor: colors.border,
     },
     openPillText: {
       color: colors.text,
       fontFamily: "Rubik700",
-      fontSize: 12,
+      fontSize: 11,
     },
   });
 }

@@ -8,13 +8,13 @@ import {
   Image,
   Modal,
   Pressable,
+  Platform,
 } from "react-native";
 import { TabBarIcon } from "./navigation/TabBarIcon";
 import CurrencyIcon from "./CurrencyIcon";
 import { useTheme } from "@/src/hooks/useTheme";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { LinearGradient } from "expo-linear-gradient";
-import { AppBlurView } from "@/src/components/common/AppBlurView";
 
 type SkinPreviewProps = {
   selectedSkin: any;
@@ -60,26 +60,22 @@ export const SkinPreview = ({
   return (
     <View style={styles.overlay}>
       <View style={styles.sheet}>
-        <AppBlurView
-          tint={theme === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
-          intensity={78}
-          style={styles.blurLayer}
-        />
         {previewArtwork && (
           <Image
             source={{ uri: previewArtwork }}
-            blurRadius={24}
             style={styles.sheetBackdropImage}
+            blurRadius={6}
           />
         )}
         <LinearGradient
           colors={[
-            theme === "dark" ? "rgba(16,17,20,0.84)" : "rgba(248,250,252,0.84)",
-            theme === "dark" ? "rgba(16,17,20,0.72)" : "rgba(248,250,252,0.72)",
-            theme === "dark" ? "rgba(16,17,20,0.94)" : "rgba(248,250,252,0.94)",
+            theme === "dark" ? "rgba(9,10,12,0.85)" : "rgba(248,250,252,0.85)",
+            theme === "dark" ? "rgba(9,10,12,0.92)" : "rgba(248,250,252,0.92)",
           ]}
           style={styles.sheetBackdropTint}
         />
+
+        {/* Header Row */}
         <View style={styles.header}>
           <View style={styles.titleBlock}>
             <Text style={styles.eyebrow}>
@@ -91,12 +87,13 @@ export const SkinPreview = ({
           </View>
           {price && (
             <View style={styles.priceChip}>
-              <CurrencyIcon icon="vp" size={18} />
+              <CurrencyIcon icon="vp" size={16} />
               <Text style={styles.priceText}>{price}</Text>
             </View>
           )}
         </View>
 
+        {/* Video Player Frame */}
         <View style={styles.previewWrap}>
           {currentVideoPreview ? (
             <VideoView
@@ -108,15 +105,16 @@ export const SkinPreview = ({
             />
           ) : (
             <View style={styles.emptyMedia}>
-              <TabBarIcon name="videocam-off-outline" color={colors.subtle} size={30} />
-              <Text style={styles.emptyMediaText}>No video found for this skin.</Text>
+              <TabBarIcon name="videocam-off-outline" color={colors.subtle} size={28} />
+              <Text style={styles.emptyMediaText}>No video review available.</Text>
             </View>
           )}
         </View>
 
+        {/* Variants Row */}
         <View style={styles.variantBlock}>
           <Text style={styles.variantLabel}>
-            {selectedSkin.chromas.length > 1 ? "Variants" : "No variants found"}
+            {selectedSkin.chromas.length > 1 ? "CHROMA VARIANTS" : "DEFAULT COLOR ONLY"}
           </Text>
           {selectedSkin.chromas.length > 1 && (
             <View style={styles.swatchRow}>
@@ -153,13 +151,14 @@ export const SkinPreview = ({
           )}
         </View>
 
+        {/* Action Panel */}
         <View style={styles.actions}>
           <TouchableOpacity
             onPress={() => {
               addSkinToWishList(selectedSkin);
               handleWishlistPress(selectedSkin);
             }}
-            activeOpacity={0.74}
+            activeOpacity={0.8}
             style={[
               styles.secondaryButton,
               inWishlist && styles.secondaryButtonActive,
@@ -168,19 +167,19 @@ export const SkinPreview = ({
             <TabBarIcon
               name={!inWishlist ? "heart-outline" : "heart"}
               color={accent.red}
-              size={22}
+              size={20}
             />
             <Text style={styles.secondaryButtonText}>
-              {!inWishlist ? "Add To Wishlist" : "Remove from Wishlist"}
+              {!inWishlist ? "Track Skin" : "Stop Tracking"}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => setSelectedSkin(null)}
-            activeOpacity={0.74}
+            activeOpacity={0.8}
             style={styles.primaryButton}
           >
-            <Text style={styles.primaryButtonText}>Close</Text>
+            <Text style={styles.primaryButtonText}>Dismiss</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -188,12 +187,12 @@ export const SkinPreview = ({
       <Modal animationType="fade" transparent={true} visible={modalVisible}>
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
-            <Text style={styles.modalText}>Variant video not found.</Text>
+            <Text style={styles.modalText}>Chromakey review video is currently unavailable for this level.</Text>
             <Pressable
               style={styles.modalButton}
               onPress={() => setModalVisible(!modalVisible)}
             >
-              <Text style={styles.modalButtonText}>Close</Text>
+              <Text style={styles.modalButtonText}>Acknowledge</Text>
             </Pressable>
           </View>
         </View>
@@ -205,52 +204,38 @@ export const SkinPreview = ({
 function createStyles(colors: any, accent: any, theme: string) {
   return StyleSheet.create({
     overlay: {
-      backgroundColor: "rgba(0,0,0,0.68)",
+      backgroundColor: "rgba(0,0,0,0.65)",
       position: "absolute",
       top: 0,
       left: 0,
       right: 0,
       bottom: 0,
-      justifyContent: "center",
-      alignItems: "center",
+      justifyContent: "flex-end",
       zIndex: 10,
-      padding: 16,
     },
     sheet: {
       overflow: "hidden",
-      backgroundColor: theme === "dark" ? "rgba(16,17,20,0.88)" : "rgba(248,250,252,0.88)",
+      backgroundColor: theme === "dark" ? "rgba(16,17,20,0.92)" : "rgba(248,250,252,0.92)",
       zIndex: 11,
       width: "100%",
-      maxHeight: "92%",
-      justifyContent: "center",
-      padding: 16,
-      borderRadius: 8,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
       borderWidth: 1,
       borderColor: colors.glassBorder,
-      gap: 14,
-      shadowColor: "#000000",
-      shadowOpacity: 0.2,
-      shadowRadius: 26,
-      shadowOffset: { width: 0, height: 16 },
-      elevation: 20,
+      padding: 20,
+      paddingBottom: Platform.OS === "ios" ? 40 : 24,
+      gap: 16,
     },
     sheetBackdropImage: {
       position: "absolute",
-      width: "130%",
-      height: "130%",
-      left: "-15%",
-      top: "-15%",
-      resizeMode: "contain",
-      opacity: 0.28,
+      width: "120%",
+      height: "120%",
+      right: "-10%",
+      bottom: "-10%",
+      opacity: 0.18,
+      resizeMode: "cover",
     },
     sheetBackdropTint: {
-      position: "absolute",
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0,
-    },
-    blurLayer: {
       position: "absolute",
       top: 0,
       right: 0,
@@ -269,86 +254,88 @@ function createStyles(colors: any, accent: any, theme: string) {
     },
     eyebrow: {
       fontFamily: "Rubik700",
-      color: accent.green,
-      fontSize: 12,
+      color: accent.gold,
+      fontSize: 11,
       textTransform: "uppercase",
+      letterSpacing: 0.5,
     },
     title: {
       fontFamily: "Rubik800",
       color: colors.text,
-      fontSize: 25,
-      lineHeight: 29,
+      fontSize: 22,
+      lineHeight: 26,
     },
     priceChip: {
-      minHeight: 32,
+      height: 32,
       paddingHorizontal: 10,
-      borderRadius: 8,
+      borderRadius: 10,
       flexDirection: "row",
       alignItems: "center",
-      gap: 5,
-      backgroundColor: colors.glass,
+      gap: 4,
+      backgroundColor: colors.surfaceStrong,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
+      borderColor: colors.border,
     },
     priceText: {
       color: colors.text,
-      fontSize: 15,
+      fontSize: 14,
       fontFamily: "Rubik700",
     },
     previewWrap: {
-      borderRadius: 8,
+      borderRadius: 14,
       overflow: "hidden",
       borderWidth: 1,
-      borderColor: colors.glassBorder,
-      backgroundColor: "rgba(0,0,0,0.24)",
+      borderColor: colors.border,
+      backgroundColor: "rgba(0,0,0,0.18)",
     },
     video: {
       width: "100%",
-      aspectRatio: 4 / 3,
+      aspectRatio: 16 / 9,
     },
     emptyMedia: {
       width: "100%",
-      aspectRatio: 4 / 3,
+      aspectRatio: 16 / 9,
       justifyContent: "center",
       alignItems: "center",
       gap: 8,
     },
     emptyMediaText: {
       color: colors.muted,
-      fontSize: 16,
-      fontFamily: "Rubik500",
+      fontSize: 14,
+      fontFamily: "Rubik600",
       textAlign: "center",
     },
     variantBlock: {
       alignItems: "center",
-      gap: 10,
+      gap: 8,
     },
     variantLabel: {
       color: colors.muted,
-      fontFamily: "Rubik600",
-      fontSize: 14,
+      fontFamily: "Rubik700",
+      fontSize: 11,
+      letterSpacing: 0.5,
     },
     swatchRow: {
       flexDirection: "row",
       flexWrap: "wrap",
-      gap: 12,
+      gap: 10,
       justifyContent: "center",
     },
     swatchButton: {
-      width: 48,
-      height: 48,
-      borderRadius: 8,
+      width: 42,
+      height: 42,
+      borderRadius: 10,
       overflow: "hidden",
       borderWidth: 2,
       borderColor: colors.border,
-      opacity: 0.62,
+      opacity: 0.6,
     },
     swatchButtonActive: {
-      borderColor: accent.blue,
+      borderColor: accent.gold,
       opacity: 1,
     },
     swatchButtonDisabled: {
-      opacity: 0.28,
+      opacity: 0.25,
     },
     swatchImage: {
       width: "100%",
@@ -357,19 +344,19 @@ function createStyles(colors: any, accent: any, theme: string) {
     actions: {
       width: "100%",
       gap: 10,
+      flexDirection: "row",
     },
     secondaryButton: {
-      minHeight: 48,
+      flex: 1,
+      height: 48,
       borderWidth: 1,
-      borderColor: "rgba(255,77,97,0.32)",
+      borderColor: "rgba(255,77,97,0.22)",
       backgroundColor: "transparent",
-      borderRadius: 8,
-      paddingHorizontal: 14,
-      width: "100%",
+      borderRadius: 12,
       justifyContent: "center",
       alignItems: "center",
       flexDirection: "row",
-      gap: 8,
+      gap: 6,
     },
     secondaryButtonActive: {
       backgroundColor: accent.ultraDarkRed,
@@ -377,22 +364,20 @@ function createStyles(colors: any, accent: any, theme: string) {
     secondaryButtonText: {
       fontFamily: "Rubik700",
       color: accent.red,
-      fontSize: 16,
-      textAlign: "center",
+      fontSize: 14,
     },
     primaryButton: {
+      flex: 1,
       backgroundColor: colors.text,
-      borderRadius: 8,
-      minHeight: 48,
-      width: "100%",
+      borderRadius: 12,
+      height: 48,
       justifyContent: "center",
       alignItems: "center",
     },
     primaryButtonText: {
       fontFamily: "Rubik800",
       color: colors.background,
-      fontSize: 16,
-      textAlign: "center",
+      fontSize: 14,
     },
     centeredView: {
       flex: 1,
@@ -403,8 +388,8 @@ function createStyles(colors: any, accent: any, theme: string) {
     },
     modalView: {
       backgroundColor: colors.background,
-      borderRadius: 8,
-      padding: 16,
+      borderRadius: 16,
+      padding: 20,
       alignItems: "center",
       width: "100%",
       borderWidth: 1,
@@ -412,8 +397,8 @@ function createStyles(colors: any, accent: any, theme: string) {
       gap: 16,
     },
     modalButton: {
-      borderRadius: 8,
-      minHeight: 44,
+      borderRadius: 12,
+      height: 44,
       width: "100%",
       justifyContent: "center",
       alignItems: "center",
@@ -422,14 +407,14 @@ function createStyles(colors: any, accent: any, theme: string) {
     modalButtonText: {
       color: colors.background,
       fontFamily: "Rubik800",
-      textAlign: "center",
-      fontSize: 16,
+      fontSize: 14,
     },
     modalText: {
       color: colors.text,
       fontFamily: "Rubik600",
       textAlign: "center",
-      fontSize: 17,
+      fontSize: 15,
+      lineHeight: 20,
     },
   });
 }
