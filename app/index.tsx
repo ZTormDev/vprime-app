@@ -105,6 +105,29 @@ export default function Index() {
       const restored = await restoreSession();
       if (restored) {
         const state = useAuthStore.getState();
+
+        try {
+          const decoded = jwtDecode<JwtPayload>(state.accessToken!);
+          const isExpired = decoded.exp ? (decoded.exp * 1000 < Date.now()) : true;
+          if (isExpired) {
+            console.log("Session token has expired. Redirecting to login.");
+            await useAuthStore.getState().clearSession();
+            SetAccessToken(null);
+            SetIdToken(null);
+            SetPlayerUUID(null);
+            setLogged(false);
+            return;
+          }
+        } catch (jwtError) {
+          console.error("Failed to parse stored session token:", jwtError);
+          await useAuthStore.getState().clearSession();
+          SetAccessToken(null);
+          SetIdToken(null);
+          SetPlayerUUID(null);
+          setLogged(false);
+          return;
+        }
+
         SetAccessToken(state.accessToken!);
         SetIdToken(state.idToken!);
         SetPlayerUUID(state.playerUUID!);
@@ -126,7 +149,11 @@ export default function Index() {
           await getRankTiers();
           await checkTokens();
         } catch (error) {
-          console.error("Failed to restore session assets:", error);
+          console.error("Failed to restore session assets (unauthorized or network failure):", error);
+          await useAuthStore.getState().clearSession();
+          SetAccessToken(null);
+          SetIdToken(null);
+          SetPlayerUUID(null);
           setLogged(false);
         }
       } else {

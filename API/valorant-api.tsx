@@ -627,7 +627,7 @@ export async function parseShop(shop: any) {
 }
 
 function parseNightMarket(shop: any) {
-  let nightMarket = {
+  let nightMarket: { Offers: any[]; TimeRemaining: number } = {
     Offers: [],
     TimeRemaining: 0,
   };

@@ -34,6 +34,7 @@ export async function pushNotification(title: string, body: any, trigger: any) {
     content: {
       title: title,
       ...(body ? { body: body } : {}),
+      sound: "notification.wav",
     },
     trigger: trigger,
   });
@@ -45,6 +46,7 @@ export async function scheduleDailyNotification(title: string, trigger: number, 
     content: {
       title: title,
       body: body ?? 'Check out the new store items! 🛒🔥',
+      sound: "notification.wav",
     },
     trigger: {
       seconds: trigger,
@@ -62,78 +64,94 @@ export interface PushNotificationState {
 
 export const usePushNotifications = (): PushNotificationState => {
   Notifications.setNotificationHandler({
-    handleNotification: async () => ({shouldPlaySound: true,shouldShowAlert: true,shouldSetBadge: true,}),
+    handleNotification: async () => ({
+      shouldPlaySound: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldSetBadge: true,
+    }),
   });
 
   const [expoPushToken, setExpoPushToken] = useState<any>();
 
   const [notification, setNotification] = useState<any>();
 
-  const notificationListener = useRef<any>();
-  const responseListener = useRef<any>();
+
 
   async function registerForPushNotificationsAsync() {
     let token;
-    if (Device.isDevice) {
-      const { status: existingStatus } =
-        await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
+    try {
+      if (Device.isDevice) {
+        const { status: existingStatus } =
+          await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
 
-      if (existingStatus !== "granted") {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
+        if (existingStatus !== "granted") {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+        if (finalStatus !== "granted") {
+          console.warn("Failed to get push token for push notification: Permission not granted");
+          return;
+        }
+
+        token = await Notifications.getExpoPushTokenAsync({
+          projectId: Constants.expoConfig?.extra?.eas.projectId,
+        });
+      } else {
+        console.warn("Must be using a physical device for Push notifications");
       }
-      if (finalStatus !== "granted") {
-        alert("Failed to get push token for push notification");
-        return;
+
+      if (Platform.OS === "android") {
+        await Notifications.setNotificationChannelAsync("default", {
+          name: "default",
+          importance: Notifications.AndroidImportance.MAX,
+          lightColor: "#FF231F7C",
+          sound: "notification.wav",
+          audioAttributes: {
+            usage: Notifications.AndroidAudioUsage.ALARM,
+            contentType: Notifications.AndroidAudioContentType.SONIFICATION,
+          },
+        });
       }
-
-      token = await Notifications.getExpoPushTokenAsync({
-        projectId: Constants.expoConfig?.extra?.eas.projectId,
-      });
-    } else {
-      alert("Must be using a physical device for Push notifications");
+    } catch (err: any) {
+      const errMsg = err?.toString() || "";
+      if (errMsg.includes("SERVICE_NOT_AVAILABLE")) {
+        console.log("Push notifications are disabled in this environment (Google Play Services unavailable).");
+      } else {
+        console.warn("Error registering for push notifications:", err);
+      }
     }
-
-    if (Platform.OS === "android") {
-      await Notifications.setNotificationChannelAsync("default", {
-        name: "default",
-        importance: Notifications.AndroidImportance.MAX,
-        lightColor: "#FF231F7C",
-        audioAttributes: {
-          usage: Notifications.AndroidAudioUsage.ALARM,
-          contentType: Notifications.AndroidAudioContentType.SONIFICATION,
-        },
-      });
-    }
-
-    // console.log(token);
 
     return token;
   }
 
   useEffect(() => {
-    registerForPushNotificationsAsync().then((token) => {
-      setExpoPushToken(token);
-    });
-
-    notificationListener.current =
-      Notifications.addNotificationReceivedListener((notification) => {
-        setNotification(notification);
-        
+    registerForPushNotificationsAsync()
+      .then((token) => {
+        if (token) setExpoPushToken(token);
+      })
+      .catch((err) => {
+        console.warn("Failed to register push notifications in hook:", err);
       });
 
-    responseListener.current =
-      Notifications.addNotificationResponseReceivedListener((response) => {
+    const notificationSubscription =
+      Notifications.addNotificationReceivedListener((notification: any) => {
+        setNotification(notification);
+      });
+
+    const responseSubscription =
+      Notifications.addNotificationResponseReceivedListener((response: any) => {
         // console.log(response);
       });
 
     return () => {
-      Notifications.removeNotificationSubscription(
-        notificationListener.current!
-      );
-
-      Notifications.removeNotificationSubscription(responseListener.current!);
+      if (notificationSubscription && typeof notificationSubscription.remove === "function") {
+        notificationSubscription.remove();
+      }
+      if (responseSubscription && typeof responseSubscription.remove === "function") {
+        responseSubscription.remove();
+      }
     };
   }, []);
 

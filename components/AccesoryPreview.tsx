@@ -10,8 +10,10 @@ import {
   Pressable,
 } from "react-native";
 import { TabBarIcon } from "./navigation/TabBarIcon";
-import { Colors } from "@/constants/Colors";
 import CurrencyIcon from "./CurrencyIcon";
+import { useTheme } from "@/src/hooks/useTheme";
+import { LinearGradient } from "expo-linear-gradient";
+import { AppBlurView } from "@/src/components/common/AppBlurView";
 
 type AccessoryPreviewProps = {
   selectedAccessory: any;
@@ -33,6 +35,9 @@ export const AccessoryPreview = ({
   const [currentImagePreview, setCurrentImagePreview] = useState(imagePreview);
   const [modalVisible, setModalVisible] = useState(false);
 
+  const { colors, theme, accent } = useTheme();
+  const styles = React.useMemo(() => createStyles(colors, accent, theme), [colors, accent, theme]);
+
   useEffect(() => {
     setCurrentImagePreview(imagePreview);
   }, [imagePreview]);
@@ -40,6 +45,26 @@ export const AccessoryPreview = ({
   return (
     <View style={styles.overlay}>
       <View style={styles.sheet}>
+        <AppBlurView
+          tint={theme === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
+          intensity={78}
+          style={styles.blurLayer}
+        />
+        {currentImagePreview && (
+          <Image
+            source={{ uri: currentImagePreview }}
+            blurRadius={24}
+            style={styles.sheetBackdropImage}
+          />
+        )}
+        <LinearGradient
+          colors={[
+            theme === "dark" ? "rgba(16,17,20,0.84)" : "rgba(248,250,252,0.84)",
+            theme === "dark" ? "rgba(16,17,20,0.72)" : "rgba(248,250,252,0.72)",
+            theme === "dark" ? "rgba(16,17,20,0.94)" : "rgba(248,250,252,0.94)",
+          ]}
+          style={styles.sheetBackdropTint}
+        />
         <View style={styles.header}>
           <View style={styles.titleBlock}>
             <Text style={styles.eyebrow}>
@@ -71,7 +96,7 @@ export const AccessoryPreview = ({
             />
           ) : (
             <View style={styles.emptyMedia}>
-              <TabBarIcon name="image-outline" color={Colors.dark.subtle} size={30} />
+              <TabBarIcon name="image-outline" color={colors.subtle} size={30} />
               <Text style={styles.emptyMediaText}>No image found for this accessory.</Text>
             </View>
           )}
@@ -91,7 +116,7 @@ export const AccessoryPreview = ({
           >
             <TabBarIcon
               name={!inWishlist ? "heart-outline" : "heart"}
-              color={Colors.accent.red}
+              color={accent.red}
               size={22}
             />
             <Text style={styles.secondaryButtonText}>
@@ -126,176 +151,202 @@ export const AccessoryPreview = ({
   );
 };
 
-const styles = StyleSheet.create({
-  overlay: {
-    backgroundColor: "rgba(0,0,0,0.68)",
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 10,
-    padding: 16,
-  },
-  sheet: {
-    backgroundColor: Colors.dark.background,
-    zIndex: 11,
-    width: "100%",
-    maxHeight: "92%",
-    justifyContent: "center",
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.dark.border,
-    gap: 14,
-    shadowColor: Colors.shadow.color,
-    shadowOpacity: Colors.shadow.mediumOpacity,
-    shadowRadius: 26,
-    shadowOffset: { width: 0, height: 16 },
-    elevation: 20,
-  },
-  header: {
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 12,
-  },
-  titleBlock: {
-    flex: 1,
-  },
-  eyebrow: {
-    fontFamily: "Rubik700",
-    color: Colors.accent.blue,
-    fontSize: 12,
-    textTransform: "uppercase",
-  },
-  title: {
-    fontFamily: "Rubik800",
-    color: Colors.dark.text,
-    fontSize: 25,
-    lineHeight: 29,
-  },
-  priceChip: {
-    minHeight: 32,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: Colors.dark.surface,
-    borderWidth: 1,
-    borderColor: Colors.dark.border,
-  },
-  priceText: {
-    color: Colors.dark.text,
-    fontSize: 15,
-    fontFamily: "Rubik700",
-  },
-  previewWrap: {
-    borderRadius: 8,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: Colors.dark.border,
-    backgroundColor: Colors.dark.backgroundAlt,
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: 260,
-  },
-  previewImage: {
-    width: "100%",
-    resizeMode: "contain",
-  },
-  emptyMedia: {
-    width: "100%",
-    aspectRatio: 4 / 3,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-  },
-  emptyMediaText: {
-    color: Colors.dark.muted,
-    fontSize: 16,
-    fontFamily: "Rubik500",
-    textAlign: "center",
-  },
-  actions: {
-    width: "100%",
-    gap: 10,
-  },
-  secondaryButton: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: "rgba(255,77,97,0.32)",
-    backgroundColor: "transparent",
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-  },
-  secondaryButtonActive: {
-    backgroundColor: Colors.accent.ultraDarkRed,
-  },
-  secondaryButtonText: {
-    fontFamily: "Rubik700",
-    color: Colors.accent.red,
-    fontSize: 16,
-    textAlign: "center",
-  },
-  primaryButton: {
-    backgroundColor: Colors.dark.text,
-    borderRadius: 8,
-    minHeight: 48,
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  primaryButtonText: {
-    fontFamily: "Rubik800",
-    color: Colors.dark.background,
-    fontSize: 16,
-    textAlign: "center",
-  },
-  centeredView: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.58)",
-    padding: 24,
-  },
-  modalView: {
-    backgroundColor: Colors.dark.background,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: "center",
-    width: "100%",
-    borderWidth: 1,
-    borderColor: Colors.dark.border,
-    gap: 16,
-  },
-  modalButton: {
-    borderRadius: 8,
-    minHeight: 44,
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: Colors.dark.text,
-  },
-  modalButtonText: {
-    color: Colors.dark.background,
-    fontFamily: "Rubik800",
-    textAlign: "center",
-    fontSize: 16,
-  },
-  modalText: {
-    color: Colors.dark.text,
-    fontFamily: "Rubik600",
-    textAlign: "center",
-    fontSize: 17,
-  },
-});
+function createStyles(colors: any, accent: any, theme: string) {
+  return StyleSheet.create({
+    overlay: {
+      backgroundColor: "rgba(0,0,0,0.68)",
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 10,
+      padding: 16,
+    },
+    sheet: {
+      overflow: "hidden",
+      backgroundColor: theme === "dark" ? "rgba(16,17,20,0.88)" : "rgba(248,250,252,0.88)",
+      zIndex: 11,
+      width: "100%",
+      maxHeight: "92%",
+      justifyContent: "center",
+      padding: 16,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      gap: 14,
+      shadowColor: "#000000",
+      shadowOpacity: 0.2,
+      shadowRadius: 26,
+      shadowOffset: { width: 0, height: 16 },
+      elevation: 20,
+    },
+    sheetBackdropImage: {
+      position: "absolute",
+      width: "130%",
+      height: "130%",
+      left: "-15%",
+      top: "-15%",
+      resizeMode: "contain",
+      opacity: 0.24,
+    },
+    sheetBackdropTint: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    },
+    blurLayer: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    },
+    header: {
+      width: "100%",
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      gap: 12,
+    },
+    titleBlock: {
+      flex: 1,
+    },
+    eyebrow: {
+      fontFamily: "Rubik700",
+      color: accent.blue,
+      fontSize: 12,
+      textTransform: "uppercase",
+    },
+    title: {
+      fontFamily: "Rubik800",
+      color: colors.text,
+      fontSize: 25,
+      lineHeight: 29,
+    },
+    priceChip: {
+      minHeight: 32,
+      paddingHorizontal: 10,
+      borderRadius: 8,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      backgroundColor: colors.glass,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    priceText: {
+      color: colors.text,
+      fontSize: 15,
+      fontFamily: "Rubik700",
+    },
+    previewWrap: {
+      borderRadius: 8,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      backgroundColor: "rgba(0,0,0,0.24)",
+      justifyContent: "center",
+      alignItems: "center",
+      minHeight: 260,
+    },
+    previewImage: {
+      width: "100%",
+      resizeMode: "contain",
+    },
+    emptyMedia: {
+      width: "100%",
+      aspectRatio: 4 / 3,
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 8,
+    },
+    emptyMediaText: {
+      color: colors.muted,
+      fontSize: 16,
+      fontFamily: "Rubik500",
+      textAlign: "center",
+    },
+    actions: {
+      width: "100%",
+      gap: 10,
+    },
+    secondaryButton: {
+      minHeight: 48,
+      borderWidth: 1,
+      borderColor: "rgba(255,77,97,0.32)",
+      backgroundColor: "transparent",
+      borderRadius: 8,
+      paddingHorizontal: 14,
+      width: "100%",
+      justifyContent: "center",
+      alignItems: "center",
+      flexDirection: "row",
+      gap: 8,
+    },
+    secondaryButtonActive: {
+      backgroundColor: accent.ultraDarkRed,
+    },
+    secondaryButtonText: {
+      fontFamily: "Rubik700",
+      color: accent.red,
+      fontSize: 16,
+      textAlign: "center",
+    },
+    primaryButton: {
+      backgroundColor: colors.text,
+      borderRadius: 8,
+      minHeight: 48,
+      width: "100%",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    primaryButtonText: {
+      fontFamily: "Rubik800",
+      color: colors.background,
+      fontSize: 16,
+      textAlign: "center",
+    },
+    centeredView: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0,0,0,0.58)",
+      padding: 24,
+    },
+    modalView: {
+      backgroundColor: colors.background,
+      borderRadius: 8,
+      padding: 16,
+      alignItems: "center",
+      width: "100%",
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: 16,
+    },
+    modalButton: {
+      borderRadius: 8,
+      minHeight: 44,
+      width: "100%",
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: colors.text,
+    },
+    modalButtonText: {
+      color: colors.background,
+      fontFamily: "Rubik800",
+      textAlign: "center",
+      fontSize: 16,
+    },
+    modalText: {
+      color: colors.text,
+      fontFamily: "Rubik600",
+      textAlign: "center",
+      fontSize: 17,
+    },
+  });
+}

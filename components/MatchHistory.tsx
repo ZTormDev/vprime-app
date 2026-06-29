@@ -10,7 +10,7 @@ import {
   Image,
   StyleSheet,
 } from "react-native";
-import { Colors } from "@/constants/Colors";
+import { useTheme } from "@/src/hooks/useTheme";
 import {
   eraseMathHistory,
   getMatchHistory,
@@ -18,6 +18,7 @@ import {
   PlayerMMR,
 } from "@/API/valorant-api";
 import { LinearGradient } from "expo-linear-gradient";
+import { AppBlurView } from "@/src/components/common/AppBlurView";
 import ProgressBar from "./ProgressBar";
 import { TabBarIcon } from "./navigation/TabBarIcon";
 
@@ -29,6 +30,9 @@ export const MatchHistory = ({ setShowMatchHistory }: MatchHistoryProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [detailsVisible, setDetailsVisible] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<any | null>(null);
+
+  const { colors, theme, accent } = useTheme();
+  const styles = React.useMemo(() => createStyles(colors, accent, theme), [colors, accent, theme]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -68,18 +72,23 @@ export const MatchHistory = ({ setShowMatchHistory }: MatchHistoryProps) => {
       const a = parseInt(hex.substring(6, 8), 16) / 255;
       return `rgba(${r}, ${g}, ${b}, ${a})`;
     }
-    return Colors.accent.blue;
+    return accent.blue;
   }
 
   const resultTone = (result: string) => {
-    if (result === "Victory") return Colors.accent.green;
-    if (result === "Draw") return Colors.dark.muted;
-    return Colors.accent.red;
+    if (result === "Victory") return accent.green;
+    if (result === "Draw") return colors.muted;
+    return accent.red;
   };
 
   return (
     <View style={styles.overlay}>
       <View style={styles.sheet}>
+        <AppBlurView
+          tint={theme === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
+          intensity={72}
+          style={styles.blurLayer}
+        />
         <View style={styles.header}>
           <View>
             <Text style={styles.eyebrow}>Competitive</Text>
@@ -90,11 +99,16 @@ export const MatchHistory = ({ setShowMatchHistory }: MatchHistoryProps) => {
             style={styles.iconButton}
             activeOpacity={0.72}
           >
-            <TabBarIcon name="close" color={Colors.dark.text} size={22} />
+            <TabBarIcon name="close" color={colors.text} size={22} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.rankCard}>
+          <AppBlurView
+            tint={theme === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
+            intensity={38}
+            style={styles.blurLayer}
+          />
           {PlayerMMR?.Rank?.largeIcon && (
             <Image
               style={styles.rankIcon}
@@ -128,13 +142,14 @@ export const MatchHistory = ({ setShowMatchHistory }: MatchHistoryProps) => {
 
         {isLoading ? (
           <View style={styles.loadingWrap}>
-            <ActivityIndicator size="large" color={Colors.accent.blue} />
+            <ActivityIndicator size="large" color={accent.blue} />
             <Text style={styles.loadingText}>Loading matches</Text>
           </View>
         ) : (
           <ScrollView
             contentContainerStyle={styles.matchList}
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator={true}
+            indicatorStyle={theme === "dark" ? "white" : "black"}
           >
             {MatchHistoryData?.Matches?.map(
               (match: any, index: any) =>
@@ -145,12 +160,20 @@ export const MatchHistory = ({ setShowMatchHistory }: MatchHistoryProps) => {
                     activeOpacity={0.76}
                     onPress={() => handleMatchPress(match)}
                   >
+                    <AppBlurView
+                      tint={theme === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
+                      intensity={28}
+                      style={styles.blurLayer}
+                    />
                     <Image
                       style={styles.mapImage}
                       source={{ uri: match.Details.MapDetails.listViewIcon }}
                     />
                     <LinearGradient
-                      colors={["rgba(16,17,20,0.25)", "rgba(16,17,20,0.92)"]}
+                      colors={[
+                        theme === "dark" ? "rgba(16,17,20,0.25)" : "rgba(248,250,252,0.25)",
+                        theme === "dark" ? "rgba(16,17,20,0.92)" : "rgba(248,250,252,0.92)",
+                      ]}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
                       style={styles.mapFade}
@@ -244,209 +267,220 @@ export const MatchHistory = ({ setShowMatchHistory }: MatchHistoryProps) => {
   );
 };
 
-const styles = StyleSheet.create({
-  overlay: {
-    width: "100%",
-    height: "100%",
-    zIndex: 10,
-    position: "absolute",
-    top: 0,
-    left: 0,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    justifyContent: "flex-end",
-  },
-  sheet: {
-    height: "92%",
-    backgroundColor: Colors.dark.background,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.dark.border,
-    padding: 16,
-    gap: 14,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  eyebrow: {
-    color: Colors.accent.blue,
-    fontSize: 12,
-    fontFamily: "Rubik700",
-    textTransform: "uppercase",
-  },
-  title: {
-    color: Colors.dark.text,
-    fontSize: 30,
-    fontFamily: "Rubik800",
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: Colors.dark.surfaceStrong,
-  },
-  rankCard: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.dark.border,
-    backgroundColor: Colors.dark.surface,
-    padding: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-  },
-  rankIcon: {
-    width: 70,
-    height: 70,
-    resizeMode: "contain",
-  },
-  rankTextBlock: {
-    flex: 1,
-    gap: 6,
-  },
-  rankName: {
-    fontSize: 21,
-    fontFamily: "Rubik800",
-  },
-  rankSubtext: {
-    fontFamily: "Rubik600",
-    fontSize: 14,
-    color: Colors.dark.muted,
-  },
-  loadingWrap: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 10,
-  },
-  loadingText: {
-    color: Colors.dark.muted,
-    fontFamily: "Rubik600",
-    fontSize: 15,
-  },
-  matchList: {
-    gap: 12,
-    paddingBottom: 18,
-  },
-  matchCard: {
-    minHeight: 96,
-    borderRadius: 8,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: Colors.dark.border,
-    backgroundColor: Colors.dark.card,
-  },
-  mapImage: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-    opacity: 0.62,
-  },
-  mapFade: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  matchContent: {
-    minHeight: 96,
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 10,
-    gap: 10,
-  },
-  agentIcon: {
-    width: 76,
-    height: 76,
-    resizeMode: "contain",
-  },
-  matchMain: {
-    flex: 1,
-    gap: 4,
-  },
-  resultRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  resultText: {
-    fontSize: 19,
-    fontFamily: "Rubik800",
-    textTransform: "uppercase",
-  },
-  scoreText: {
-    color: Colors.dark.text,
-    fontSize: 18,
-    fontFamily: "Rubik700",
-  },
-  kdaText: {
-    color: Colors.dark.muted,
-    fontSize: 13,
-    fontFamily: "Rubik600",
-  },
-  matchRight: {
-    alignItems: "flex-end",
-    gap: 2,
-  },
-  rrText: {
-    fontFamily: "Rubik800",
-    fontSize: 16,
-  },
-  dateText: {
-    color: Colors.dark.muted,
-    fontSize: 11,
-    fontFamily: "Rubik500",
-  },
-  detailOverlay: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.58)",
-    padding: 24,
-  },
-  detailSheet: {
-    width: "100%",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: Colors.dark.background,
-    borderWidth: 1,
-    borderRadius: 8,
-    borderColor: Colors.dark.border,
-    padding: 18,
-    gap: 18,
-  },
-  detailTitle: {
-    color: Colors.dark.text,
-    fontFamily: "Rubik800",
-    fontSize: 24,
-  },
-  detailStats: {
-    width: "100%",
-    gap: 8,
-  },
-  detailText: {
-    color: Colors.dark.muted,
-    fontFamily: "Rubik600",
-    fontSize: 15,
-  },
-  detailButton: {
-    backgroundColor: Colors.dark.text,
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: 46,
-    borderRadius: 8,
-  },
-  detailButtonText: {
-    color: Colors.dark.background,
-    fontFamily: "Rubik800",
-    fontSize: 16,
-  },
-});
+function createStyles(colors: any, accent: any, theme: string) {
+  return StyleSheet.create({
+    overlay: {
+      width: "100%",
+      height: "100%",
+      zIndex: 10,
+      position: "absolute",
+      top: 0,
+      left: 0,
+      backgroundColor: "rgba(0,0,0,0.55)",
+      justifyContent: "flex-end",
+    },
+    sheet: {
+      height: "92%",
+      backgroundColor: theme === "dark" ? "rgba(16,17,20,0.96)" : "rgba(248,250,252,0.96)",
+      borderTopLeftRadius: 8,
+      borderTopRightRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      padding: 16,
+      gap: 14,
+      overflow: "hidden",
+    },
+    blurLayer: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    eyebrow: {
+      color: accent.blue,
+      fontSize: 12,
+      fontFamily: "Rubik700",
+      textTransform: "uppercase",
+    },
+    title: {
+      color: colors.text,
+      fontSize: 30,
+      fontFamily: "Rubik800",
+    },
+    iconButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 8,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: colors.surfaceStrong,
+    },
+    rankCard: {
+      borderRadius: 8,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      backgroundColor: colors.glass,
+      padding: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+    },
+    rankIcon: {
+      width: 70,
+      height: 70,
+      resizeMode: "contain",
+    },
+    rankTextBlock: {
+      flex: 1,
+      gap: 6,
+    },
+    rankName: {
+      fontSize: 21,
+      fontFamily: "Rubik800",
+    },
+    rankSubtext: {
+      fontFamily: "Rubik600",
+      fontSize: 14,
+      color: colors.muted,
+    },
+    loadingWrap: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 10,
+    },
+    loadingText: {
+      color: colors.muted,
+      fontFamily: "Rubik600",
+      fontSize: 15,
+    },
+    matchList: {
+      gap: 12,
+      paddingBottom: 18,
+    },
+    matchCard: {
+      minHeight: 96,
+      borderRadius: 8,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      backgroundColor: colors.glass,
+    },
+    mapImage: {
+      position: "absolute",
+      width: "100%",
+      height: "100%",
+      resizeMode: "cover",
+      opacity: 0.62,
+    },
+    mapFade: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+    },
+    matchContent: {
+      minHeight: 96,
+      flexDirection: "row",
+      alignItems: "center",
+      padding: 10,
+      gap: 10,
+    },
+    agentIcon: {
+      width: 76,
+      height: 76,
+      resizeMode: "contain",
+    },
+    matchMain: {
+      flex: 1,
+      gap: 4,
+    },
+    resultRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    resultText: {
+      fontSize: 19,
+      fontFamily: "Rubik800",
+      textTransform: "uppercase",
+    },
+    scoreText: {
+      color: colors.text,
+      fontSize: 18,
+      fontFamily: "Rubik700",
+    },
+    kdaText: {
+      color: colors.muted,
+      fontSize: 13,
+      fontFamily: "Rubik600",
+    },
+    matchRight: {
+      alignItems: "flex-end",
+      gap: 2,
+    },
+    rrText: {
+      fontFamily: "Rubik800",
+      fontSize: 16,
+    },
+    dateText: {
+      color: colors.muted,
+      fontSize: 11,
+      fontFamily: "Rubik500",
+    },
+    detailOverlay: {
+      width: "100%",
+      height: "100%",
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0,0,0,0.58)",
+      padding: 24,
+    },
+    detailSheet: {
+      width: "100%",
+      justifyContent: "space-between",
+      alignItems: "center",
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderRadius: 8,
+      borderColor: colors.border,
+      padding: 18,
+      gap: 18,
+    },
+    detailTitle: {
+      color: colors.text,
+      fontFamily: "Rubik800",
+      fontSize: 24,
+    },
+    detailStats: {
+      width: "100%",
+      gap: 8,
+    },
+    detailText: {
+      color: colors.muted,
+      fontFamily: "Rubik600",
+      fontSize: 15,
+    },
+    detailButton: {
+      backgroundColor: colors.text,
+      width: "100%",
+      justifyContent: "center",
+      alignItems: "center",
+      minHeight: 46,
+      borderRadius: 8,
+    },
+    detailButtonText: {
+      color: colors.background,
+      fontFamily: "Rubik800",
+      fontSize: 16,
+    },
+  });
+}

@@ -7,6 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
+
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.zetadev.vprime"
@@ -19,7 +20,9 @@
       "package": "com.zetadev.vprime",
       "googleServicesFile": "./google-services.json",
       "permissions": [
-        "INTERNET"
+        "INTERNET",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.WAKE_LOCK"
       ]
     },
     "web": {
@@ -33,8 +36,11 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/icon.png",
-          "color": "#ff8484"
+          "icon": "./assets/images/notification_icon.png",
+          "color": "#ff8484",
+          "sounds": [
+            "./assets/audio/notification.wav"
+          ]
         }
       ],
       [
@@ -48,18 +54,28 @@
       "expo-status-bar",
       "expo-video",
       "expo-web-browser",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-background-fetch",
+      [
+        "expo-navigation-bar",
+        {
+          "visible": "always",
+          "style": "dark",
+          "backgroundColor": "#000000"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "eas": {
-        "projectId": "316a7665-85a6-44f7-8932-6345a334a1aa"
-      },
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "ffbe3416-b740-4818-b038-bb0ba51e0dec"
       }
-    }
+    },
+    "owner": "ztormdev"
   }
 }

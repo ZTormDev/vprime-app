@@ -52,7 +52,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <Text
             style={{
               fontFamily: "Rubik700",
-              color: Colors.accent.color,
+              color: Colors.accent.gold,
               fontSize: 32,
               textAlign: "center",
               marginBottom: 10,
@@ -79,7 +79,7 @@ export class ErrorBoundary extends Component<Props, State> {
             activeOpacity={0.7}
             underlayColor={Colors.accent.darkRed}
             style={{
-              backgroundColor: Colors.accent.color,
+              backgroundColor: Colors.accent.gold,
               paddingVertical: 14,
               paddingHorizontal: 40,
               borderRadius: 2,

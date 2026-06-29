@@ -46,15 +46,15 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (Platform.OS === 'android') {
-      const navigationBar = NavigationBar as any;
-      if (NavigationBar && typeof NavigationBar.setVisibilityAsync === 'function') {
-        NavigationBar.setVisibilityAsync('visible');
-      }
-      if (navigationBar && typeof navigationBar.setBackgroundColorAsync === 'function') {
-        navigationBar.setBackgroundColorAsync(Colors.dark.background);
-      }
-      if (navigationBar && typeof navigationBar.setButtonStyleAsync === 'function') {
-        navigationBar.setButtonStyleAsync('light');
+      try {
+        const NavigationBarAndroid = NavigationBar as any;
+        if (NavigationBarAndroid && typeof NavigationBarAndroid.setBackgroundColorAsync === 'function') {
+          NavigationBarAndroid.setVisibilityAsync('visible');
+          NavigationBarAndroid.setBackgroundColorAsync('black');
+          NavigationBarAndroid.setButtonStyleAsync('dark');
+        }
+      } catch (err) {
+        console.warn("Failed to set native navigation bar color:", err);
       }
     }
   }, []);
