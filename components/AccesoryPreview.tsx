@@ -1,7 +1,5 @@
-import { addSkinToWishList } from "@/API/valorant-api";
 import React, { useState, useEffect } from "react";
 import {
-  TouchableOpacity,
   View,
   Text,
   StyleSheet,
@@ -14,6 +12,7 @@ import { TabBarIcon } from "./navigation/TabBarIcon";
 import CurrencyIcon from "./CurrencyIcon";
 import { useTheme } from "@/src/hooks/useTheme";
 import { LinearGradient } from "expo-linear-gradient";
+import { AnimatedEntrance, AnimatedPressable } from "@/src/components/common/Motion";
 
 type AccessoryPreviewProps = {
   selectedAccessory: any;
@@ -44,21 +43,23 @@ export const AccessoryPreview = ({
 
   return (
     <View style={styles.overlay}>
-      <View style={styles.sheet}>
-        {currentImagePreview && (
-          <Image
-            source={{ uri: currentImagePreview }}
-            style={styles.sheetBackdropImage}
-            blurRadius={6}
+      <AnimatedEntrance style={styles.sheet} distance={18} duration={260}>
+        <View pointerEvents="none" style={styles.decorLayer}>
+          {currentImagePreview && (
+            <Image
+              source={{ uri: currentImagePreview }}
+              style={styles.sheetBackdropImage}
+              blurRadius={6}
+            />
+          )}
+          <LinearGradient
+            colors={[
+              theme === "dark" ? "rgba(9,10,12,0.85)" : "rgba(248,250,252,0.85)",
+              theme === "dark" ? "rgba(9,10,12,0.92)" : "rgba(248,250,252,0.92)",
+            ]}
+            style={styles.sheetBackdropTint}
           />
-        )}
-        <LinearGradient
-          colors={[
-            theme === "dark" ? "rgba(9,10,12,0.85)" : "rgba(248,250,252,0.85)",
-            theme === "dark" ? "rgba(9,10,12,0.92)" : "rgba(248,250,252,0.92)",
-          ]}
-          style={styles.sheetBackdropTint}
-        />
+        </View>
 
         {/* Header Block */}
         <View style={styles.header}>
@@ -103,15 +104,15 @@ export const AccessoryPreview = ({
 
         {/* Actions Panel */}
         <View style={styles.actions}>
-          <TouchableOpacity
+          <AnimatedPressable
             onPress={() => setSelectedAccessory(null)}
-            activeOpacity={0.8}
             style={styles.primaryButton}
+            contentStyle={styles.primaryButtonContent}
           >
             <Text style={styles.primaryButtonText}>Dismiss</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
         </View>
-      </View>
+      </AnimatedEntrance>
 
       <Modal animationType="fade" transparent={true} visible={modalVisible}>
         <View style={styles.centeredView}>
@@ -154,6 +155,13 @@ function createStyles(colors: any, accent: any, theme: string) {
       padding: 20,
       paddingBottom: Platform.OS === "ios" ? 40 : 24,
       gap: 16,
+    },
+    decorLayer: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
     },
     sheetBackdropImage: {
       position: "absolute",
@@ -246,6 +254,11 @@ function createStyles(colors: any, accent: any, theme: string) {
       borderRadius: 12,
       height: 48,
       width: "100%",
+      overflow: "hidden",
+    },
+    primaryButtonContent: {
+      width: "100%",
+      height: "100%",
       justifyContent: "center",
       alignItems: "center",
     },

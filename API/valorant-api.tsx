@@ -95,12 +95,43 @@ type ValorantAuthenticatedRequest = {
   entitlementsToken: string;
 };
 
+type ValorantGlzRequest = ValorantAuthenticatedRequest & {
+  region: string;
+};
+
 const CURRENCY_IDS = {
   vp: "85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741",
   kingdomCredits: "85ca954a-41f2-ce94-9b45-8ca3dd39a00d",
   freeAgents: "f08d4ae3-939c-4576-ab26-09ce1f23bb37",
   radianite: "e59aa87c-4cbf-517a-5983-6e81511be9b7",
 } as const;
+
+function buildValorantHeaders(accessToken: string, entitlementsToken: string) {
+  return {
+    "X-Riot-ClientPlatform": extraHeaders["X-Riot-ClientPlatform"],
+    "X-Riot-ClientVersion": extraHeaders["X-Riot-ClientVersion"],
+    "X-Riot-Entitlements-JWT": entitlementsToken,
+    Authorization: `Bearer ${accessToken}`,
+  };
+}
+
+function getGlzBaseUrl(region: string, shard: string) {
+  return `https://glz-${region}-1.${shard}.a.pvp.net`;
+}
+
+function isExpectedLiveAvailabilityError(error: any) {
+  const status = error?.response?.status;
+  const message = String(error?.message || "").toLowerCase();
+
+  return (
+    status === 404 ||
+    status === 0 ||
+    error?.code === "ERR_NETWORK" ||
+    message.includes("network error") ||
+    message.includes("fetch failed") ||
+    message.includes("canceled")
+  );
+}
 
 // ==========================================
 // Stateless Valorant Api Service (Service Layer)
@@ -239,9 +270,13 @@ export const ValorantApiService = {
   async fetchCompetitiveUpdates(
     request: ValorantAuthenticatedRequest,
     startIndex = 0,
-    endIndex = 6
+    endIndex = 6,
+    queue?: string
   ): Promise<any> {
-    const url = `https://pd.${request.shard}.a.pvp.net/mmr/v1/players/${request.playerUuid}/competitiveupdates?startIndex=${startIndex}&endIndex=${endIndex}`;
+    let url = `https://pd.${request.shard}.a.pvp.net/mmr/v1/players/${request.playerUuid}/competitiveupdates?startIndex=${startIndex}&endIndex=${endIndex}`;
+    if (queue) {
+      url += `&queue=${queue}`;
+    }
     const headers = {
       "X-Riot-ClientPlatform": extraHeaders["X-Riot-ClientPlatform"],
       "X-Riot-ClientVersion": extraHeaders["X-Riot-ClientVersion"],
@@ -265,7 +300,6 @@ export const ValorantApiService = {
     entitlementsToken: string,
     rankTiers: any[]
   ): Promise<any> {
-    const url = `https://pd.${shard}.a.pvp.net/mmr/v1/players/${playerUuid}`;
     const headers = {
       "X-Riot-ClientPlatform": extraHeaders["X-Riot-ClientPlatform"],
       "X-Riot-ClientVersion": extraHeaders["X-Riot-ClientVersion"],
@@ -273,59 +307,71 @@ export const ValorantApiService = {
       Authorization: `Bearer ${accessToken}`,
     };
 
-    try {
-      const response = await axios.get(url, { headers });
-      const playerMmr = response.data;
+    const regions = shard === "na" ? ["na", "latam", "br"] : [shard];
+    let responseData: any = null;
+    let successRegion = shard;
 
-      if (playerMmr && playerMmr.LatestCompetitiveUpdate) {
-        const playerRank = rankTiers?.[rankTiers.length - 1]?.tiers?.find(
-          (rank: any) => rank.tier === playerMmr.LatestCompetitiveUpdate.TierBeforeUpdate
-        ) || rankTiers?.[rankTiers.length - 1]?.tiers?.[0] || getFallbackUnranked(rankTiers);
+    console.log("[API Service] MMR Request headers:", headers);
 
-        playerMmr.Rank = playerRank;
-        return playerMmr;
-      }
-      throw new Error("No competitive update in profile data");
-    } catch (error: any) {
-      if (error.response?.status === 404 || error.message === "No competitive update in profile data") {
-        console.log("[API Service] MMR 404. Running competitive history updates fallback query...");
-        try {
-          const compData = await ValorantApiService.fetchCompetitiveUpdates(
-            { shard, playerUuid, accessToken, entitlementsToken },
-            0,
-            1
-          );
-
-          if (compData && compData.Matches && compData.Matches.length > 0) {
-            const latestMatch = compData.Matches[0];
-            const tierId = latestMatch.TierAfterUpdate;
-            const playerRank = rankTiers?.[rankTiers.length - 1]?.tiers?.find(
-              (rank: any) => rank.tier === tierId
-            ) || getFallbackUnranked(rankTiers);
-
-            return {
-              LatestCompetitiveUpdate: {
-                RankedRatingBeforeUpdate: latestMatch.RankedRatingAfterUpdate,
-                TierBeforeUpdate: tierId,
-              },
-              Rank: playerRank,
-            };
-          }
-        } catch (fallbackError) {
-          console.error("[API Service] Fallback MMR updates parse failed:", fallbackError);
+    for (const r of regions) {
+      const url = `https://pd.${r}.a.pvp.net/mmr/v1/players/${playerUuid}`;
+      try {
+        const response = await axios.get(url, { headers });
+        if (response?.data?.LatestCompetitiveUpdate) {
+          responseData = response.data;
+          successRegion = r;
+          break;
         }
-      } else {
-        console.error("[API Service] Failed to retrieve player MMR status:", error?.response?.data || error?.message);
+      } catch (e) {
+        // Silent retry on region candidate
       }
-      // Return default unranked model
-      return {
-        LatestCompetitiveUpdate: {
-          RankedRatingBeforeUpdate: 0,
-          TierBeforeUpdate: 0,
-        },
-        Rank: getFallbackUnranked(rankTiers),
-      };
     }
+
+    if (responseData) {
+      const playerRank = rankTiers?.[rankTiers.length - 1]?.tiers?.find(
+        (rank: any) => rank.tier === responseData.LatestCompetitiveUpdate.TierBeforeUpdate
+      ) || rankTiers?.[rankTiers.length - 1]?.tiers?.[0] || getFallbackUnranked(rankTiers);
+
+      responseData.Rank = playerRank;
+      return responseData;
+    }
+
+    // If all candidates failed (or returned no competitive update), execute the competitive updates fallback
+    try {
+      const compData = await ValorantApiService.fetchCompetitiveUpdates(
+        { shard, playerUuid, accessToken, entitlementsToken },
+        0,
+        15,
+        "competitive"
+      );
+
+      if (compData && compData.Matches && compData.Matches.length > 0) {
+        const latestMatch = compData.Matches[0];
+        const tierId = latestMatch.TierAfterUpdate;
+        const playerRank = rankTiers?.[rankTiers.length - 1]?.tiers?.find(
+          (rank: any) => rank.tier === tierId
+        ) || getFallbackUnranked(rankTiers);
+
+        return {
+          LatestCompetitiveUpdate: {
+            RankedRatingBeforeUpdate: latestMatch.RankedRatingAfterUpdate,
+            TierBeforeUpdate: tierId,
+          },
+          Rank: playerRank,
+        };
+      }
+    } catch (fallbackError) {
+      console.error("[API Service] Fallback MMR updates parse failed:", fallbackError);
+    }
+
+    // Return default unranked model
+    return {
+      LatestCompetitiveUpdate: {
+        RankedRatingBeforeUpdate: 0,
+        TierBeforeUpdate: 0,
+      },
+      Rank: getFallbackUnranked(rankTiers),
+    };
   },
 
   /**
@@ -345,6 +391,150 @@ export const ValorantApiService = {
 
     const response = await axios.get(url, { headers });
     return response.data;
+  },
+
+  async fetchCurrentGamePlayer(request: ValorantGlzRequest): Promise<any | null> {
+    const url = `${getGlzBaseUrl(request.region, request.shard)}/core-game/v1/players/${request.playerUuid}`;
+
+    try {
+      const response = await axios.get(url, {
+        headers: buildValorantHeaders(request.accessToken, request.entitlementsToken),
+    });
+      return response.data;
+    } catch (error: any) {
+      if (!isExpectedLiveAvailabilityError(error)) {
+        console.error("[API Service] Current game player fetch error:", error?.response?.data || error?.message);
+      }
+      return null;
+    }
+  },
+
+  async fetchCurrentGameMatch(request: ValorantGlzRequest, matchId: string): Promise<any | null> {
+    const url = `${getGlzBaseUrl(request.region, request.shard)}/core-game/v1/matches/${matchId}`;
+
+    try {
+      const response = await axios.get(url, {
+        headers: buildValorantHeaders(request.accessToken, request.entitlementsToken),
+    });
+      return response.data;
+    } catch (error: any) {
+      if (!isExpectedLiveAvailabilityError(error)) {
+        console.error("[API Service] Current game match fetch error:", error?.response?.data || error?.message);
+      }
+      return null;
+    }
+  },
+
+  async fetchPreGamePlayer(request: ValorantGlzRequest): Promise<any | null> {
+    const url = `${getGlzBaseUrl(request.region, request.shard)}/pregame/v1/players/${request.playerUuid}`;
+
+    try {
+      const response = await axios.get(url, {
+        headers: buildValorantHeaders(request.accessToken, request.entitlementsToken),
+    });
+      return response.data;
+    } catch (error: any) {
+      if (!isExpectedLiveAvailabilityError(error)) {
+        console.error("[API Service] Pre-game player fetch error:", error?.response?.data || error?.message);
+      }
+      return null;
+    }
+  },
+
+  async fetchPreGameMatch(request: ValorantGlzRequest, matchId: string): Promise<any | null> {
+    const url = `${getGlzBaseUrl(request.region, request.shard)}/pregame/v1/matches/${matchId}`;
+
+    try {
+      const response = await axios.get(url, {
+        headers: buildValorantHeaders(request.accessToken, request.entitlementsToken),
+    });
+      return response.data;
+    } catch (error: any) {
+      if (!isExpectedLiveAvailabilityError(error)) {
+        console.error("[API Service] Pre-game match fetch error:", error?.response?.data || error?.message);
+      }
+      return null;
+    }
+  },
+
+  async selectPreGameAgent(
+    request: ValorantGlzRequest,
+    matchId: string,
+    agentId: string
+  ): Promise<boolean> {
+    const url = `${getGlzBaseUrl(request.region, request.shard)}/pregame/v1/matches/${matchId}/select/${agentId}`;
+
+    try {
+      await axios.post(url, {}, {
+        headers: buildValorantHeaders(request.accessToken, request.entitlementsToken),
+      });
+      return true;
+    } catch (error: any) {
+      console.error("[API Service] Pre-game agent select error:", error?.response?.data || error?.message);
+      return false;
+    }
+  },
+
+  async lockPreGameAgent(
+    request: ValorantGlzRequest,
+    matchId: string,
+    agentId: string
+  ): Promise<boolean> {
+    const url = `${getGlzBaseUrl(request.region, request.shard)}/pregame/v1/matches/${matchId}/lock/${agentId}`;
+
+    try {
+      await axios.post(url, {}, {
+        headers: buildValorantHeaders(request.accessToken, request.entitlementsToken),
+      });
+      return true;
+    } catch (error: any) {
+      console.error("[API Service] Pre-game agent lock error:", error?.response?.data || error?.message);
+      return false;
+    }
+  },
+
+  async fetchPlayerNames(
+    shard: string,
+    accessToken: string,
+    entitlementsToken: string,
+    playerUuids: string[]
+  ): Promise<Record<string, any>> {
+    if (playerUuids.length === 0) {
+      return {};
+    }
+
+    const url = `https://pd.${shard}.a.pvp.net/name-service/v2/players`;
+    try {
+      const response = await axios.put(url, playerUuids, {
+        headers: buildValorantHeaders(accessToken, entitlementsToken),
+      });
+      return (response.data || []).reduce((acc: Record<string, any>, player: any) => {
+        const id = player.Subject || player.subject;
+        if (id) acc[id] = player;
+        return acc;
+      }, {});
+    } catch (error: any) {
+      console.error("[API Service] Name service fetch error:", error?.response?.data || error?.message);
+      return {};
+    }
+  },
+
+  async fetchPlayerMmrByUuid(
+    shard: string,
+    playerUuid: string,
+    accessToken: string,
+    entitlementsToken: string
+  ): Promise<any | null> {
+    const url = `https://pd.${shard}.a.pvp.net/mmr/v1/players/${playerUuid}`;
+
+    try {
+      const response = await axios.get(url, {
+        headers: buildValorantHeaders(accessToken, entitlementsToken),
+      });
+      return response.data;
+    } catch {
+      return null;
+    }
   },
 
   async fetchMatchHistory(
@@ -524,9 +714,6 @@ export const ValorantApiService = {
     }
   },
 
-  /**
-   * Fetches global featured bundles collections list from valorant-api
-   */
   async fetchBundlesList(): Promise<any[]> {
     try {
       const response = await axios.get("https://valorant-api.com/v1/bundles?en-US");
@@ -534,6 +721,109 @@ export const ValorantApiService = {
     } catch (error) {
       console.error("[API Service] Failed to load featured bundles:", error);
       return [];
+    }
+  },
+
+  /**
+   * Fetches global weapons list from valorant-api
+   */
+  async fetchWeaponsList(): Promise<any[]> {
+    try {
+      const response = await axios.get("https://valorant-api.com/v1/weapons?en-US");
+      return response.data.data;
+    } catch (error) {
+      console.error("[API Service] Failed to load weapons list:", error);
+      return [];
+    }
+  },
+
+  /**
+   * Updates player loadout on Riot servers
+   */
+  async updatePlayerLoadout(
+    shard: string,
+    playerUuid: string,
+    accessToken: string,
+    entitlementsToken: string,
+    loadout: any
+  ): Promise<any> {
+    const url = `https://pd.${shard}.a.pvp.net/personalization/v2/players/${playerUuid}/playerloadout`;
+    const headers = {
+      "X-Riot-ClientPlatform": extraHeaders["X-Riot-ClientPlatform"],
+      "X-Riot-ClientVersion": extraHeaders["X-Riot-ClientVersion"],
+      "X-Riot-Entitlements-JWT": entitlementsToken,
+      Authorization: `Bearer ${accessToken}`,
+    };
+
+    try {
+      const response = await axios.put(url, loadout, { headers });
+      return response.data;
+    } catch (error: any) {
+      console.error("[API Service] Failed to update player loadout:", error?.response?.data || error?.message);
+      return null;
+    }
+  },
+
+  /**
+   * Fetches player entitlements (purchased items) from Riot
+   */
+  async fetchPlayerEntitlements(
+    shard: string,
+    playerUuid: string,
+    accessToken: string,
+    entitlementsToken: string,
+    itemTypeId: string
+  ): Promise<any> {
+    const url = `https://pd.${shard}.a.pvp.net/store/v1/entitlements/${playerUuid}/${itemTypeId}`;
+    const headers = {
+      "X-Riot-ClientPlatform": extraHeaders["X-Riot-ClientPlatform"],
+      "X-Riot-ClientVersion": extraHeaders["X-Riot-ClientVersion"],
+      "X-Riot-Entitlements-JWT": entitlementsToken,
+      Authorization: `Bearer ${accessToken}`,
+    };
+
+    try {
+      const response = await axios.get(url, { headers });
+      return response.data;
+    } catch (error: any) {
+      console.error(`[API Service] Failed to retrieve entitlements for type ${itemTypeId}:`, error?.response?.data || error?.message);
+      return null;
+    }
+  },
+
+  /**
+   * Performs a store purchase on Riot servers
+   */
+  async purchaseStoreOffer(
+    shard: string,
+    playerUuid: string,
+    accessToken: string,
+    entitlementsToken: string,
+    offerId: string,
+    currencyId: string,
+    price: number
+  ): Promise<any> {
+    const url = `https://pd.${shard}.a.pvp.net/store/v2/purchase`;
+    const headers = {
+      "X-Riot-ClientPlatform": extraHeaders["X-Riot-ClientPlatform"],
+      "X-Riot-ClientVersion": extraHeaders["X-Riot-ClientVersion"],
+      "X-Riot-Entitlements-JWT": entitlementsToken,
+      Authorization: `Bearer ${accessToken}`,
+    };
+    const body = [
+      {
+        OfferID: offerId,
+        CurrencyID: currencyId,
+        Price: price,
+      },
+    ];
+
+    try {
+      const response = await axios.post(url, body, { headers });
+      return response.data;
+    } catch (error: any) {
+      console.error("[API Service] Failed to purchase store offer:", error?.response?.data || error?.message);
+      return null;
     }
   },
 };
@@ -651,6 +941,68 @@ export async function GetPlayerLoadout() {
   );
   PlayerLoadout = loadout;
   return loadout;
+}
+
+export async function getWeapons() {
+  const list = await ValorantApiService.fetchWeaponsList();
+  useShopStore.setState({ weapons: list });
+  return list;
+}
+
+export async function SavePlayerLoadout(loadout: any) {
+  const auth = useAuthStore.getState();
+  const updatedLoadout = await ValorantApiService.updatePlayerLoadout(
+    auth.shard || "",
+    auth.playerUUID || "",
+    auth.accessToken || "",
+    EntitlementsToken || "",
+    loadout
+  );
+  if (updatedLoadout) {
+    PlayerLoadout = updatedLoadout;
+  }
+  return updatedLoadout;
+}
+
+export async function getPlayerEntitlements() {
+  const auth = useAuthStore.getState();
+  const levels = await ValorantApiService.fetchPlayerEntitlements(
+    auth.shard || "",
+    auth.playerUUID || "",
+    auth.accessToken || "",
+    EntitlementsToken || "",
+    "e7c63390-eda7-46e0-bb7a-a6abdacd2433"
+  );
+  const chromas = await ValorantApiService.fetchPlayerEntitlements(
+    auth.shard || "",
+    auth.playerUUID || "",
+    auth.accessToken || "",
+    EntitlementsToken || "",
+    "3ad1b2b2-acdb-4524-852f-954a76ddae0a"
+  );
+
+  const ownedIds = new Set<string>();
+  if (levels?.Entitlements) {
+    levels.Entitlements.forEach((e: any) => ownedIds.add(e.ItemID));
+  }
+  if (chromas?.Entitlements) {
+    chromas.Entitlements.forEach((e: any) => ownedIds.add(e.ItemID));
+  }
+
+  useShopStore.setState({ ownedItems: Array.from(ownedIds) });
+}
+
+export async function PurchaseOffer(offerId: string, currencyId: string, price: number) {
+  const auth = useAuthStore.getState();
+  return await ValorantApiService.purchaseStoreOffer(
+    auth.shard || "",
+    auth.playerUUID || "",
+    auth.accessToken || "",
+    EntitlementsToken || "",
+    offerId,
+    currencyId,
+    price
+  );
 }
 
 export async function getPlayerCard() {
@@ -820,6 +1172,10 @@ export async function parseStorefront(
       if (costs.length > 0) {
         clonedSkin.Cost = formatNumberWithCommas(costs[0] as number);
       }
+      clonedSkin.OfferID = offerId;
+      clonedSkin.CurrencyID = Object.keys(dailyOffers[i].Cost)[0];
+      clonedSkin.RawPrice = costs[0];
+      clonedSkin.IsDailyOffer = true;
       const tier = globalTiers.find((t: any) => t.uuid === skin.contentTierUuid);
       if (tier) {
         clonedSkin.TierColor = getTierColor(tier);
@@ -883,6 +1239,10 @@ export async function parseStorefront(
           clonedSkin.OriginalCost = formatNumberWithCommas(originalCosts[0] as number);
           clonedSkin.Cost = formatNumberWithCommas(discountCosts[0] as number);
         }
+        clonedSkin.OfferID = rawNightMarket[i].BonusStoreOfferID;
+        clonedSkin.CurrencyID = Object.keys(rawNightMarket[i].DiscountCosts)[0];
+        clonedSkin.RawPrice = discountCosts[0];
+        clonedSkin.IsNightMarketOffer = true;
         const tier = globalTiers.find((t: any) => t.uuid === skin.contentTierUuid);
         if (tier) {
           clonedSkin.TierColor = getTierColor(tier);

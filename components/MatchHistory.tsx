@@ -2,14 +2,13 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   ScrollView,
   ActivityIndicator,
   Modal,
-  Pressable,
   Image,
   StyleSheet,
   Platform,
+  TouchableOpacity,
 } from "react-native";
 import { useTheme } from "@/src/hooks/useTheme";
 import {
@@ -20,6 +19,7 @@ import { useShopStore } from "@/src/store/useShopStore";
 import { LinearGradient } from "expo-linear-gradient";
 import ProgressBar from "./ProgressBar";
 import { TabBarIcon } from "./navigation/TabBarIcon";
+import { AnimatedEntrance, AnimatedPressable } from "@/src/components/common/Motion";
 
 type MatchHistoryProps = {
   setShowMatchHistory: (show: boolean) => void;
@@ -73,7 +73,7 @@ export const MatchHistory = ({ setShowMatchHistory }: MatchHistoryProps) => {
 
   return (
     <View style={styles.overlay}>
-      <View style={styles.sheet}>
+      <AnimatedEntrance style={styles.sheet} distance={18} duration={240}>
         <View style={styles.grabber} />
 
         {/* Header Block */}
@@ -126,13 +126,13 @@ export const MatchHistory = ({ setShowMatchHistory }: MatchHistoryProps) => {
             {matchHistory?.Matches?.map(
               (match: any, index: any) =>
                 match.Details && (
-                  <TouchableOpacity
-                    key={index}
+                  <AnimatedEntrance key={match.MatchID || index} delay={(index % 5) * 35} distance={10} duration={220}>
+                  <AnimatedPressable
                     style={[
                       styles.matchCard,
                       { borderColor: resultTone(match.Details.result) + "38" }
                     ]}
-                    activeOpacity={0.8}
+                    contentStyle={styles.matchPressableContent}
                     onPress={() => handleMatchPress(match)}
                   >
                     <Image
@@ -208,17 +208,18 @@ export const MatchHistory = ({ setShowMatchHistory }: MatchHistoryProps) => {
                         </Text>
                       </View>
                     </View>
-                  </TouchableOpacity>
+                  </AnimatedPressable>
+                  </AnimatedEntrance>
                 )
             )}
           </ScrollView>
         )}
-      </View>
+      </AnimatedEntrance>
 
       {/* Detail Overlay */}
       <Modal animationType="fade" transparent={true} visible={detailsVisible}>
         <View style={styles.detailOverlay}>
-          <View style={styles.detailSheet}>
+          <AnimatedEntrance style={styles.detailSheet} distance={12} duration={220}>
             {selectedMatch?.Details && (
               <>
                 <View style={styles.detailHeader}>
@@ -279,13 +280,13 @@ export const MatchHistory = ({ setShowMatchHistory }: MatchHistoryProps) => {
                 </View>
               </>
             )}
-            <Pressable
+            <AnimatedPressable
               style={styles.detailButton}
               onPress={() => setDetailsVisible(!detailsVisible)}
             >
               <Text style={styles.detailButtonText}>Dismiss Log</Text>
-            </Pressable>
-          </View>
+            </AnimatedPressable>
+          </AnimatedEntrance>
         </View>
       </Modal>
     </View>
@@ -395,6 +396,12 @@ function createStyles(colors: any, accent: any, theme: string) {
       overflow: "hidden",
       borderWidth: 1,
       backgroundColor: colors.glass,
+      flexDirection: "row",
+    },
+    matchPressableContent: {
+      flex: 1,
+      alignItems: "stretch",
+      justifyContent: "flex-start",
       flexDirection: "row",
     },
     mapImage: {

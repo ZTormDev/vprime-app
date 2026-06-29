@@ -29,6 +29,7 @@ import { TabBarIcon } from "@/components/navigation/TabBarIcon";
 import { useTheme } from "@/src/hooks/useTheme";
 import { SegmentHeader } from "@/src/components/common/SegmentHeader";
 import ProgressBar from "@/components/ProgressBar";
+import { AnimatedEntrance, runWhenIdle } from "@/src/components/common/Motion";
 
 export default function StoreScreen() {
   const [OffersTimeRemaining, setOffersTimeRemaining] = useState("");
@@ -178,13 +179,27 @@ export default function StoreScreen() {
   const showSkinPanel = async (show: boolean, skinUUID: any) => {
     if (show) {
       const skin = await getSkin(skinUUID);
-      setSelectedSkin(skin);
 
       const lastLevel: any = Object.keys(skin.levels).sort().reverse()[0];
       setVideoPreview(skin.levels[lastLevel].streamedVideo);
+      runWhenIdle(() => {
+        setSelectedSkin(skin);
+      });
     } else {
       setSelectedSkin(null);
     }
+  };
+
+  const openBundlePreview = (bundle: any) => {
+    runWhenIdle(() => {
+      setSelectedBundle(bundle);
+    });
+  };
+
+  const openAccessoryPreview = (accessory: any) => {
+    runWhenIdle(() => {
+      setSelectedAccessory(accessory);
+    });
   };
 
   const handleWishlistPress = async (skin: any) => {
@@ -242,7 +257,7 @@ export default function StoreScreen() {
           indicatorStyle={theme === "dark" ? "white" : "black"}
         >
           {/* Row 1: Profile & Rank Bento Block */}
-          <View style={styles.bentoProfileCard}>
+          <AnimatedEntrance delay={20} style={styles.bentoProfileCard}>
             {profileBackdropArt && (
               <Image
                 source={{ uri: profileBackdropArt }}
@@ -295,10 +310,10 @@ export default function StoreScreen() {
                 />
               </View>
             </View>
-          </View>
+          </AnimatedEntrance>
 
           {/* Row 2: Side-by-Side Bento Blocks */}
-          <View style={styles.bentoRow}>
+          <AnimatedEntrance delay={70} style={styles.bentoRow}>
             {/* Wallet Block */}
             <View style={styles.walletBlock}>
               <Text style={styles.bentoBlockLabel}>Wallet</Text>
@@ -338,10 +353,10 @@ export default function StoreScreen() {
                 </Text>
               </View>
             </TouchableOpacity>
-          </View>
+          </AnimatedEntrance>
 
           {/* Row 3: Live Store Bento Grid Block */}
-          <View style={styles.bentoFullBlock}>
+          <AnimatedEntrance delay={120} style={styles.bentoFullBlock}>
             <View style={styles.blockHeaderRow}>
               <View>
                 <Text style={styles.bentoBlockLabel}>Console Rotation</Text>
@@ -360,11 +375,11 @@ export default function StoreScreen() {
             >
               {storeSkins.map((skin: any) => renderMiniSkinCard(skin))}
             </ScrollView>
-          </View>
+          </AnimatedEntrance>
 
           {/* Night Market Block (if active) */}
           {nightMarket && nightMarket.Offers.length > 0 && (
-            <View style={styles.bentoFullBlock}>
+            <AnimatedEntrance delay={150} style={styles.bentoFullBlock}>
               <View style={[styles.blockHeaderRow, { marginBottom: 12 }]}>
                 <View>
                   <Text style={[styles.bentoBlockLabel, { color: themeAccent.violet }]}>Special Event</Text>
@@ -385,14 +400,14 @@ export default function StoreScreen() {
                   renderMiniSkinCard(skin, skin.TierColor || themeAccent.violetSoft)
                 )}
               </ScrollView>
-            </View>
+            </AnimatedEntrance>
           )}
 
           {/* Row 4: Featured Bundle Block */}
           {featuredBundle && featuredBundle.displayIcon && (
             <TouchableOpacity
               activeOpacity={0.8}
-              onPress={() => setSelectedBundle(featuredBundle)}
+              onPress={() => openBundlePreview(featuredBundle)}
               style={styles.bentoBundleBlock}
             >
               <Image
@@ -443,7 +458,7 @@ export default function StoreScreen() {
                   <TouchableOpacity
                     key={accessory.uuid}
                     activeOpacity={0.8}
-                    onPress={() => setSelectedAccessory(accessory)}
+                    onPress={() => openAccessoryPreview(accessory)}
                     style={styles.miniAccessoryCard}
                   >
                     <View style={styles.miniCardTop}>

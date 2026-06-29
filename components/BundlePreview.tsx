@@ -6,6 +6,7 @@ import {
   Image,
   ScrollView,
   StyleSheet,
+  Platform,
 } from "react-native";
 import CurrencyIcon from "./CurrencyIcon";
 import { LinearGradient } from "expo-linear-gradient";
@@ -13,6 +14,7 @@ import { isInWishList } from "@/API/valorant-api";
 import { SkinPreview } from "./SkinPreview";
 import { TabBarIcon } from "./navigation/TabBarIcon";
 import { useTheme } from "@/src/hooks/useTheme";
+import { AnimatedEntrance, AnimatedPressable, runWhenIdle } from "@/src/components/common/Motion";
 
 type BundlePreviewProps = {
   bundleData: any;
@@ -55,10 +57,11 @@ export const BundlePreview = ({
 
   const showSkinPanel = async (show: boolean, skin: any) => {
     if (show) {
-      setSelectedSkin(skin);
-
       const lastLevel: any = Object.keys(skin.levels).sort().reverse()[0];
       setVideoPreview(skin.levels[lastLevel].streamedVideo);
+      runWhenIdle(() => {
+        setSelectedSkin(skin);
+      });
     } else {
       setSelectedSkin(null);
     }
@@ -71,7 +74,7 @@ export const BundlePreview = ({
 
   return (
     <View style={styles.overlay}>
-      <View style={styles.sheet}>
+      <AnimatedEntrance style={styles.sheet} distance={18} duration={260}>
         <View style={styles.grabber} />
 
         <View style={styles.hero}>
@@ -131,54 +134,58 @@ export const BundlePreview = ({
             </View>
           </View>
 
-          {bundleData.bundleItems.map((item: any) => (
-            <TouchableOpacity
-              key={item.uuid}
-              activeOpacity={0.8}
-              onPress={() => showSkinPanel(true, item)}
-              style={styles.itemCard}
-            >
-              <LinearGradient
-                colors={[
-                  theme === "dark" ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-                  item.TierColor || accent.goldSoft,
-                ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.itemGradient}
-              />
-              <View style={styles.itemHeader}>
-                <Text style={styles.itemMeta} numberOfLines={1}>
-                  {item.TierName || "Gear Item"}
-                </Text>
-                <View style={styles.smallPriceChip}>
-                  <CurrencyIcon icon="vp" size={13} />
-                  <Text style={styles.smallPriceText}>{item.Cost}</Text>
-                </View>
-              </View>
-
-              <Image
-                source={{ uri: item.levels[0].displayIcon || item.displayIcon }}
-                style={styles.itemImage}
-              />
-
-              <View style={styles.itemFooter}>
-                <Text style={styles.itemName} numberOfLines={1}>
-                  {item.displayName}
-                </Text>
-                <View style={styles.openPill}>
-                  <Text style={styles.openPillText}>Inspect</Text>
-                  <TabBarIcon
-                    name="chevron-forward"
-                    color={colors.text}
-                    size={14}
+          <View style={styles.itemGrid}>
+            {bundleData.bundleItems.map((item: any, index: number) => (
+              <AnimatedEntrance
+                key={item.uuid}
+                delay={(index % 6) * 30}
+                distance={12}
+                duration={240}
+                style={styles.itemGridCell}
+              >
+                <AnimatedPressable
+                  onPress={() => showSkinPanel(true, item)}
+                  pressedScale={0.965}
+                  style={styles.itemCard}
+                  contentStyle={styles.itemPressableContent}
+                >
+                  <LinearGradient
+                    colors={[
+                      theme === "dark" ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)",
+                      item.TierColor || accent.goldSoft,
+                    ]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.itemGradient}
                   />
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
+
+                  <View style={styles.itemInner}>
+                    <View style={styles.itemTopRow}>
+                      <Text style={styles.itemMeta} numberOfLines={1}>
+                        {item.TierName || "Weapon Skin"}
+                      </Text>
+                      <View style={styles.smallPriceChip}>
+                        <CurrencyIcon icon="vp" size={12} />
+                        <Text style={styles.smallPriceText}>{item.Cost}</Text>
+                      </View>
+                    </View>
+
+                    <Image
+                      source={{ uri: item.levels?.[0]?.displayIcon || item.displayIcon }}
+                      style={styles.itemImage}
+                      fadeDuration={0}
+                    />
+
+                    <Text style={styles.itemName} numberOfLines={2}>
+                      {item.displayName}
+                    </Text>
+                  </View>
+                </AnimatedPressable>
+              </AnimatedEntrance>
+            ))}
+          </View>
         </ScrollView>
-      </View>
+      </AnimatedEntrance>
 
       {selectedSkin && (
         <SkinPreview
@@ -223,7 +230,7 @@ function createStyles(colors: any, accent: any, theme: string) {
   return StyleSheet.create({
     overlay: {
       position: "absolute",
-      top: 0,
+      top: Platform.OS === "ios" ? 112 : 94,
       right: 0,
       bottom: 0,
       left: 0,
@@ -232,7 +239,7 @@ function createStyles(colors: any, accent: any, theme: string) {
       backgroundColor: "rgba(0,0,0,0.6)",
     },
     sheet: {
-      height: "94%",
+      height: "100%",
       width: "100%",
       overflow: "hidden",
       borderTopLeftRadius: 20,
@@ -346,15 +353,36 @@ function createStyles(colors: any, accent: any, theme: string) {
       fontFamily: "Rubik800",
       fontSize: 20,
     },
+    itemGrid: {
+      width: "100%",
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+      gap: 12,
+    },
+    itemGridCell: {
+      width: "48%",
+      aspectRatio: 0.86,
+    },
     itemCard: {
       width: "100%",
-      minHeight: 174,
+      height: "100%",
       borderWidth: 1,
       borderColor: colors.glassBorder,
       borderRadius: 16,
       overflow: "hidden",
-      padding: 14,
       backgroundColor: colors.glass,
+    },
+    itemPressableContent: {
+      flex: 1,
+      alignItems: "stretch",
+      justifyContent: "flex-start",
+    },
+    itemInner: {
+      flex: 1,
+      width: "100%",
+      padding: 12,
+      justifyContent: "space-between",
     },
     itemGradient: {
       position: "absolute",
@@ -364,11 +392,11 @@ function createStyles(colors: any, accent: any, theme: string) {
       left: 0,
       opacity: 0.38,
     },
-    itemHeader: {
+    itemTopRow: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      gap: 12,
+      gap: 8,
     },
     itemMeta: {
       flex: 1,
@@ -379,56 +407,35 @@ function createStyles(colors: any, accent: any, theme: string) {
       letterSpacing: 0.3,
     },
     smallPriceChip: {
-      height: 26,
-      paddingHorizontal: 8,
+      height: 24,
+      paddingHorizontal: 7,
       borderRadius: 6,
       flexDirection: "row",
       alignItems: "center",
       gap: 3,
-      backgroundColor: theme === "dark" ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.7)",
+      backgroundColor: theme === "dark" ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.72)",
       borderWidth: 1,
       borderColor: colors.hairline,
     },
     smallPriceText: {
       fontFamily: "Rubik700",
       color: colors.text,
-      fontSize: 11,
+      fontSize: 10,
     },
     itemImage: {
-      width: "80%",
+      width: "100%",
+      height: "46%",
       resizeMode: "contain",
-      aspectRatio: 16 / 9,
       alignSelf: "center",
-      marginVertical: 4,
-    },
-    itemFooter: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: 12,
+      marginVertical: 10,
     },
     itemName: {
-      flex: 1,
       fontFamily: "Rubik800",
       color: colors.text,
-      fontSize: 16,
-    },
-    openPill: {
-      height: 28,
-      paddingLeft: 8,
-      paddingRight: 6,
-      borderRadius: 8,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 2,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    openPillText: {
-      color: colors.text,
-      fontFamily: "Rubik700",
-      fontSize: 11,
+      fontSize: 13,
+      lineHeight: 16,
+      minHeight: 32,
+      textAlign: "center",
     },
   });
 }

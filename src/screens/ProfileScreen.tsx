@@ -32,6 +32,7 @@ import { MatchHistory } from "@/components/MatchHistory";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/src/hooks/useTheme";
 import { SegmentHeader } from "@/src/components/common/SegmentHeader";
+import { AnimatedEntrance, runWhenIdle } from "@/src/components/common/Motion";
 
 export default function ProfileScreen() {
   const [showWishlist, setShowWishlist] = useState<boolean | null>(null);
@@ -108,9 +109,11 @@ export default function ProfileScreen() {
   };
 
   const handleSkinPress = async (skin: any) => {
-    setSelectedSkin(skin);
     const lastLevel: any = Object.keys(skin.levels).sort().reverse()[0];
     setVideoPreview(skin.levels[lastLevel].streamedVideo);
+    runWhenIdle(() => {
+      setSelectedSkin(skin);
+    });
   };
 
   const handleWishlistPress = async (skin: any) => {
@@ -174,7 +177,7 @@ export default function ProfileScreen() {
         indicatorStyle={theme === "dark" ? "white" : "black"}
       >
         {/* Bento Identity Card */}
-        <View style={styles.profileCard}>
+        <AnimatedEntrance delay={20} style={styles.profileCard}>
           <View style={styles.profileTop}>
             <View style={styles.avatarContainer}>
               {playerCard?.displayIcon && (
@@ -198,10 +201,10 @@ export default function ProfileScreen() {
               />
             )}
           </View>
-        </View>
+        </AnimatedEntrance>
 
         {/* Bento Stats Row */}
-        <View style={styles.bentoRow}>
+        <AnimatedEntrance delay={70} style={styles.bentoRow}>
           <TouchableOpacity
             onPress={handleWishlist}
             activeOpacity={0.8}
@@ -227,10 +230,10 @@ export default function ProfileScreen() {
               <Text style={styles.statsLabel}>Competitive Status</Text>
             </View>
           </TouchableOpacity>
-        </View>
+        </AnimatedEntrance>
 
         {/* Terminal Configuration Bento Block */}
-        <View style={styles.section}>
+        <AnimatedEntrance delay={120} style={styles.section}>
           <Text style={styles.sectionTitle}>System Configuration</Text>
 
           <View style={styles.settingsRow}>
@@ -268,11 +271,11 @@ export default function ProfileScreen() {
               size={20}
             />
           </TouchableOpacity>
-        </View>
+        </AnimatedEntrance>
 
         {/* Developer Block */}
         {showDevOptions && (
-          <View style={styles.section}>
+          <AnimatedEntrance style={styles.section} distance={12} duration={220}>
             <Text style={styles.sectionTitle}>Developer Diagnostics</Text>
 
             <TouchableOpacity
@@ -302,7 +305,7 @@ export default function ProfileScreen() {
             {backgroundTestStatus ? (
               <Text style={styles.testStatus}>{backgroundTestStatus}</Text>
             ) : null}
-          </View>
+          </AnimatedEntrance>
         )}
 
         {/* Logout Button */}

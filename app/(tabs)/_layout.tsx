@@ -3,13 +3,14 @@ import React from "react";
 import { Platform, StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { TabBarIcon } from "@/components/navigation/TabBarIcon";
 import { useTheme } from "@/src/hooks/useTheme";
+import { AnimatedEntrance } from "@/src/components/common/Motion";
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const { colors, theme, accent } = useTheme();
   const styles = React.useMemo(() => createStyles(colors), [colors]);
 
   return (
-    <View style={styles.tabBarContainer}>
+    <AnimatedEntrance style={styles.tabBarContainer} distance={12} duration={260}>
       {state.routes.map((route: any, index: number) => {
         const isFocused = state.index === index;
 
@@ -61,7 +62,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
           </TouchableOpacity>
         );
       })}
-    </View>
+    </AnimatedEntrance>
   );
 }
 
@@ -72,9 +73,11 @@ export default function TabLayout() {
       tabBar={() => null}
       screenOptions={{
         headerShown: false,
+        lazy: true,
       }}
     >
       <Tabs.Screen name="store" />
+      <Tabs.Screen name="live" />
       <Tabs.Screen name="skins" />
       <Tabs.Screen name="profile" />
     </Tabs>

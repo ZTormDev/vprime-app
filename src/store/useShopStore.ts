@@ -5,6 +5,8 @@ import { Skin, Bundle, AccessoryOffer, WalletBalances } from "../types/types";
 interface ShopState {
   skins: Skin[];
   bundles: Bundle[];
+  weapons: any[];
+  ownedItems: string[];
   contentTiers: any[];
   storeSkins: any;
   featuredBundle: any;
@@ -20,6 +22,8 @@ interface ShopState {
   matchHistory: any;
   setSkins: (skins: Skin[]) => void;
   setBundles: (bundles: Bundle[]) => void;
+  setWeapons: (weapons: any[]) => void;
+  setOwnedItems: (ownedItems: string[]) => void;
   setContentTiers: (contentTiers: any[]) => void;
   setStoreSkins: (storeSkins: any) => void;
   setFeaturedBundle: (featuredBundle: any) => void;
@@ -36,6 +40,8 @@ interface ShopState {
 export const useShopStore = create<ShopState>((set, get) => ({
   skins: [],
   bundles: [],
+  weapons: [],
+  ownedItems: [],
   contentTiers: [],
   storeSkins: [],
   featuredBundle: {},
@@ -58,6 +64,8 @@ export const useShopStore = create<ShopState>((set, get) => ({
 
   setSkins: (skins) => set({ skins }),
   setBundles: (bundles) => set({ bundles }),
+  setWeapons: (weapons) => set({ weapons }),
+  setOwnedItems: (ownedItems) => set({ ownedItems }),
   setContentTiers: (contentTiers) => set({ contentTiers }),
   setStoreSkins: (storeSkins) => set({ storeSkins }),
   setFeaturedBundle: (featuredBundle) => set({ featuredBundle }),

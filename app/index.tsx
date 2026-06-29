@@ -10,6 +10,7 @@ import { Colors } from "@/constants/Colors";
 import axios from "axios";
 import * as Updates from "expo-updates";
 import { registerBackgroundWishlistTask } from "../src/utils/wishlistTask";
+import "../src/utils/autopickTask";
 import {
   getGameSkins,
   fetchSkinsWishList,
@@ -19,6 +20,8 @@ import {
   GetPlayerLoadout,
   getPlayerCard,
   getMatchHistory,
+  getWeapons,
+  getPlayerEntitlements,
   SetPlayerUUID,
   SetAccountShard,
   SetAccessToken,
@@ -97,11 +100,11 @@ export default function Index() {
 
   useEffect(() => {
     fetchNotificationStatus();
-    loadVersion();
     registerBackgroundWishlistTask();
 
     const initSession = async () => {
       console.log("Checking for stored session...");
+      await loadVersion();
       const restored = await restoreSession();
       if (restored) {
         const state = useAuthStore.getState();
@@ -139,6 +142,8 @@ export default function Index() {
           await SetAccountShard();
           await getEntitlementToken();
           await getGameSkins();
+          await getWeapons();
+          await getPlayerEntitlements();
           await getBundles();
           await getContentTiers();
           await fetchSkinsWishList();
@@ -213,8 +218,11 @@ export default function Index() {
         idTokenDecoded.acct.tag_line
       );
 
+      await loadVersion();
       await getEntitlementToken();
       await getGameSkins();
+      await getWeapons();
+      await getPlayerEntitlements();
       await getBundles();
       await getContentTiers();
       await fetchSkinsWishList();

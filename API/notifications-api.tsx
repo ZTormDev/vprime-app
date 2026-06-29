@@ -56,6 +56,27 @@ export async function scheduleDailyNotification(title: string, trigger: number, 
   });
 }
 
+export async function showAutopickNotification(agentName: string) {
+  if (!Notifications) return;
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: "Autopick Active",
+      body: `Locking ${agentName} in the next lobby. Scanning active in background.`,
+      sound: false,
+      android: {
+        sticky: true,
+      },
+    },
+    trigger: null,
+    identifier: 'autopickNotification',
+  });
+}
+
+export async function dismissAutopickNotification() {
+  if (!Notifications) return;
+  await Notifications.dismissNotificationAsync('autopickNotification');
+}
+
 
 export interface PushNotificationState {
   expoPushToken?: any;

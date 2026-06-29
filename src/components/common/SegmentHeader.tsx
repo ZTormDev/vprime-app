@@ -1,10 +1,11 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
+import { View, Text, StyleSheet, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/src/hooks/useTheme";
+import { AnimatedEntrance, AnimatedPressable, AnimatedPulse } from "./Motion";
 
 type SegmentHeaderProps = {
-  activeSegment: "store" | "skins" | "profile";
+  activeSegment: "store" | "live" | "skins" | "profile";
   transparentBackground?: boolean;
 };
 
@@ -16,46 +17,56 @@ export function SegmentHeader({ activeSegment, transparentBackground = false }: 
     [colors, accent, theme, transparentBackground]
   );
 
-  const handlePress = (target: "store" | "skins" | "profile") => {
+  const handlePress = (target: "store" | "live" | "skins" | "profile") => {
     if (activeSegment !== target) {
-      router.replace(`/(tabs)/${target}`);
+      router.replace(`/(tabs)/${target}` as any);
     }
   };
 
   return (
-    <View style={styles.outerContainer}>
+    <AnimatedEntrance style={styles.outerContainer} distance={-8} duration={240}>
       <View style={styles.segmentContainer}>
-        <TouchableOpacity
+        <AnimatedPressable
           onPress={() => handlePress("store")}
-          activeOpacity={0.8}
           style={[styles.segmentItem, activeSegment === "store" && styles.activeItem]}
         >
           <Text style={[styles.segmentText, activeSegment === "store" ? styles.activeText : { color: colors.muted }]}>
             Console
           </Text>
-        </TouchableOpacity>
+          {activeSegment === "store" && <AnimatedPulse style={styles.activePulse} />}
+        </AnimatedPressable>
 
-        <TouchableOpacity
+        <AnimatedPressable
+          onPress={() => handlePress("live")}
+          style={[styles.segmentItem, activeSegment === "live" && styles.activeItem]}
+        >
+          <Text style={[styles.segmentText, activeSegment === "live" ? styles.activeText : { color: colors.muted }]}>
+            Live
+          </Text>
+          {activeSegment === "live" && <AnimatedPulse style={styles.activePulse} />}
+        </AnimatedPressable>
+
+        <AnimatedPressable
           onPress={() => handlePress("skins")}
-          activeOpacity={0.8}
           style={[styles.segmentItem, activeSegment === "skins" && styles.activeItem]}
         >
           <Text style={[styles.segmentText, activeSegment === "skins" ? styles.activeText : { color: colors.muted }]}>
             Armory
           </Text>
-        </TouchableOpacity>
+          {activeSegment === "skins" && <AnimatedPulse style={styles.activePulse} />}
+        </AnimatedPressable>
 
-        <TouchableOpacity
+        <AnimatedPressable
           onPress={() => handlePress("profile")}
-          activeOpacity={0.8}
           style={[styles.segmentItem, activeSegment === "profile" && styles.activeItem]}
         >
           <Text style={[styles.segmentText, activeSegment === "profile" ? styles.activeText : { color: colors.muted }]}>
             Terminal
           </Text>
-        </TouchableOpacity>
+          {activeSegment === "profile" && <AnimatedPulse style={styles.activePulse} />}
+        </AnimatedPressable>
       </View>
-    </View>
+    </AnimatedEntrance>
   );
 }
 
@@ -91,12 +102,20 @@ function createStyles(colors: any, accent: any, theme: string, transparentBackgr
     },
     segmentText: {
       fontFamily: "Rubik700",
-      fontSize: 14,
+      fontSize: 12,
       textTransform: "uppercase",
-      letterSpacing: 0.8,
+      letterSpacing: 0.5,
     },
     activeText: {
       color: accent.gold,
+    },
+    activePulse: {
+      position: "absolute",
+      bottom: 5,
+      width: 5,
+      height: 5,
+      borderRadius: 5,
+      backgroundColor: accent.gold,
     },
   });
 }

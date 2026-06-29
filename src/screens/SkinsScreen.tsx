@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Platform,
   ActivityIndicator,
-  InteractionManager,
 } from "react-native";
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text } from "react-native";
@@ -20,50 +19,54 @@ import { LinearGradient } from "expo-linear-gradient";
 import { TabBarIcon } from "@/components/navigation/TabBarIcon";
 import { useTheme } from "@/src/hooks/useTheme";
 import { SegmentHeader } from "@/src/components/common/SegmentHeader";
+import { AnimatedEntrance, AnimatedPressable, runWhenIdle } from "@/src/components/common/Motion";
 
 type ArmorySkinCardProps = {
   item: any;
   styles: ReturnType<typeof createStyles>;
   theme: string;
   accent: any;
+  index: number;
   onPress: (skin: any) => void;
 };
 
 const ArmorySkinCard = memo(
-  ({ item, styles, theme, accent, onPress }: ArmorySkinCardProps) => (
-    <TouchableOpacity
-      onPress={() => onPress(item)}
-      activeOpacity={0.8}
-      style={styles.gridCard}
-    >
-      <LinearGradient
-        colors={[
-          theme === "dark" ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)",
-          item.TierColor || accent.goldSoft,
-        ]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.cardGradient}
-      />
-      <View style={styles.cardGlassTop} />
-      <View style={styles.cardContent}>
-        <Text style={styles.cardMeta} numberOfLines={1}>
-          {item.TierName || "Weapon Skin"}
-        </Text>
-
-        <Image
-          source={{
-            uri: item.levels?.[0]?.displayIcon || item.displayIcon,
-          }}
-          style={styles.cardImage}
-          fadeDuration={0}
+  ({ item, styles, theme, accent, index, onPress }: ArmorySkinCardProps) => (
+    <AnimatedEntrance delay={(index % 6) * 28} distance={12} duration={240} style={styles.gridCard}>
+      <AnimatedPressable
+        onPress={() => onPress(item)}
+        pressedScale={0.965}
+        style={styles.cardPressable}
+        contentStyle={styles.cardPressableContent}
+      >
+        <LinearGradient
+          colors={[
+            theme === "dark" ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)",
+            item.TierColor || accent.goldSoft,
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.cardGradient}
         />
+        <View style={styles.cardContent}>
+          <Text style={styles.cardMeta} numberOfLines={1}>
+            {item.TierName || "Weapon Skin"}
+          </Text>
 
-        <Text style={styles.cardTitle} numberOfLines={2}>
-          {item.displayName}
-        </Text>
-      </View>
-    </TouchableOpacity>
+          <Image
+            source={{
+              uri: item.levels?.[0]?.displayIcon || item.displayIcon,
+            }}
+            style={styles.cardImage}
+            fadeDuration={0}
+          />
+
+          <Text style={styles.cardTitle} numberOfLines={2}>
+            {item.displayName}
+          </Text>
+        </View>
+      </AnimatedPressable>
+    </AnimatedEntrance>
   )
 );
 
@@ -80,12 +83,12 @@ export default function SkinsScreen() {
   const styles = React.useMemo(() => createStyles(colors, accent, theme), [colors, accent, theme]);
 
   useEffect(() => {
-    const task = InteractionManager.runAfterInteractions(() => {
+    const cancelIdleTask = runWhenIdle(() => {
       setIsListReady(true);
     });
 
     return () => {
-      task.cancel();
+      cancelIdleTask();
     };
   }, []);
 
@@ -118,9 +121,11 @@ export default function SkinsScreen() {
   }, []);
 
   const handleSkinPress = useCallback((skin: any) => {
-    setSelectedSkin(skin);
     const lastLevel: any = Object.keys(skin.levels).sort().reverse()[0];
     setVideoPreview(skin.levels[lastLevel].streamedVideo);
+    runWhenIdle(() => {
+      setSelectedSkin(skin);
+    });
   }, []);
 
   const handleWishlistPress = useCallback(async (skin: any) => {
@@ -143,12 +148,13 @@ export default function SkinsScreen() {
   }, [searchQuery]);
 
   const renderSkin = useCallback(
-    ({ item }: { item: any }) => (
+    ({ item, index }: { item: any; index: number }) => (
       <ArmorySkinCard
         item={item}
         styles={styles}
         theme={theme}
         accent={accent}
+        index={index}
         onPress={handleArmoryCardPress}
       />
     ),
@@ -179,7 +185,7 @@ export default function SkinsScreen() {
 
       {/* Floating Modern Glass Search Bar */}
       <View style={styles.searchWrapper}>
-        <View style={styles.searchContainer}>
+        <AnimatedEntrance distance={-6} duration={220} style={styles.searchContainer}>
           <TabBarIcon name="search-outline" color={colors.subtle} size={20} />
           <TextInput
             style={styles.searchInput}
@@ -199,7 +205,7 @@ export default function SkinsScreen() {
               color={searchQuery ? colors.text : accent.gold}
             />
           </TouchableOpacity>
-        </View>
+        </AnimatedEntrance>
       </View>
 
       {isListReady ? (
@@ -306,12 +312,19 @@ function createStyles(colors: any, accent: any, theme: string) {
     gridCard: {
       width: "48%",
       aspectRatio: 0.95,
+    },
+    cardPressable: {
+      flex: 1,
       borderRadius: 16,
       overflow: "hidden",
       borderWidth: 1,
       borderColor: colors.glassBorder,
       backgroundColor: colors.glass,
-      padding: 12,
+    },
+    cardPressableContent: {
+      flex: 1,
+      alignItems: "stretch",
+      justifyContent: "flex-start",
     },
     cardGradient: {
       position: "absolute",
@@ -321,17 +334,12 @@ function createStyles(colors: any, accent: any, theme: string) {
       left: 0,
       opacity: 0.38,
     },
-    cardGlassTop: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      height: 1,
-      backgroundColor: theme === "dark" ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.5)",
-    },
+
     cardContent: {
       flex: 1,
+      width: "100%",
       justifyContent: "space-between",
+      padding: 12,
     },
     cardMeta: {
       color: colors.muted,
